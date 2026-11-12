@@ -884,18 +884,28 @@ class MeuPlanoTela extends StatelessWidget {
         final diasAtivos = app.feitos.length;
         final frequencia = app.plano.length;
 
-        // Semana atual aproximada (1-based)
-        final inicio = DateTime.now().subtract(Duration(days: DateTime.now().weekday % 7));
-        // ranking simples de semanas
+        // A jornada começa na segunda-feira da primeira semana registrada.
+        final datasRegistradas = app.feitos
+            .map(dataDaChave)
+            .whereType<DateTime>()
+            .toList()
+          ..sort();
+        final referencia = app.inicioPlano ??
+            (datasRegistradas.isEmpty ? DateTime.now() : datasRegistradas.first);
+        final inicioJornada = DateTime(
+          referencia.year,
+          referencia.month,
+          referencia.day,
+        ).subtract(Duration(days: referencia.weekday - 1));
+        final semanaAtual = (DateTime.now().difference(inicioJornada).inDays ~/ 7 + 1)
+            .clamp(1, 5).toInt();
         final semanas = List.generate(5, (i) {
-          final feitosSemana = app.feitos.where((k) {
-            final d = DateTime.tryParse(k);
-            if (d == null) return false;
-            final semanaDoAno = (d.difference(DateTime(d.year)).inDays / 7).floor();
-            final atual = (DateTime.now().difference(DateTime(DateTime.now().year)).inDays / 7).floor();
-            return semanaDoAno == atual - (4 - i);
+          final ini = inicioJornada.add(Duration(days: i * 7));
+          final fim = ini.add(const Duration(days: 7));
+          return app.feitos.where((k) {
+            final d = dataDaChave(k);
+            return d != null && !d.isBefore(ini) && d.isBefore(fim);
           }).length;
-          return feitosSemana;
         });
 
         return Scaffold(
@@ -1068,7 +1078,7 @@ class MeuPlanoTela extends StatelessWidget {
               Text('Sua jornada', style: titulo(26)),
               const SizedBox(height: 12),
               for (var s = 1; s <= 5; s++) ...[
-                _semanaCard(context, s, s == 1, semanas[s - 1].clamp(0, 5)),
+                _semanaCard(context, s, s == semanaAtual, semanas[s - 1].clamp(0, 5)),
                 const SizedBox(height: 10),
               ],
             ],
@@ -1116,76 +1126,118 @@ class MeuPlanoTela extends StatelessWidget {
 
   Widget _semanaCard(BuildContext context, int num, bool atual, int feitos) {
     final total = app.plano.isEmpty ? 5 : app.plano.length;
-    return Material(
-      color: branco(.07),
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: () {
-          if (atual) {
-            // mostra treino do dia se houver
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: atual ? kAzul : branco(.12), width: atual ? 1.5 : 1),
+    final registradas = app.feitos.map(dataDaChave).whereType<DateTime>().toList()..sort();
+    final referencia = app.inicioPlano ??
+        (registradas.isEmpty ? DateTime.now() : registradas.first);
+    final inicio = DateTime(referencia.year, referencia.month, referencia.day)
+        .subtract(Duration(days: referencia.weekday - 1))
+        .add(Duration(days: (num - 1) * 7));
+    final dias = List.generate(7, (i) => inicio.add(Duration(days: i)));
+    const nomes = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: branco(.065),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: atual ? kAzul : branco(.13), width: atual ? 1.6 : 1),
+        boxShadow: atual
+            ? [BoxShadow(color: kAzul.withOpacity(.12), blurRadius: 18, spreadRadius: 1)]
+            : const [],
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: PageStorageKey('jornada-semana-$num'),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          maintainState: true,
+          leading: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: feitos >= total && total > 0 ? kAzul : branco(.10),
+              border: Border.all(color: kAzul, width: 1.8),
+            ),
+            child: Text('$num', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
           ),
-          child: Row(
+          title: Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: atual ? kAzul : branco(.12),
-                  border: Border.all(color: kAzul, width: 2),
+              Text('Semana $num', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              if (atual) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  decoration: BoxDecoration(color: kAzul, borderRadius: BorderRadius.circular(20)),
+                  child: const Text('Em andamento', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
                 ),
-                child: Text('$num',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: atual ? Colors.white : kAzul)),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text('Semana $num', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                        if (atual) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: kAzul,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Text('Em andamento',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text('$feitos/$total treinos realizados',
-                        style: const TextStyle(color: kMudo, fontSize: 13)),
-                  ],
-                ),
-              ),
-              Icon(
-                feitos >= total ? Icons.check_circle : Icons.circle_outlined,
-                color: feitos >= total ? kAzul : kMudo,
-              ),
+              ],
             ],
           ),
+          subtitle: Text('$feitos/$total treinos realizados', style: const TextStyle(color: kMudo, fontSize: 12)),
+          trailing: Icon(feitos >= total && total > 0 ? Icons.check_circle : Icons.keyboard_arrow_down_rounded,
+              color: feitos >= total && total > 0 ? kAzul : kMudo),
+          children: [
+            const Divider(color: Colors.white12, height: 12),
+            for (var i = 0; i < dias.length; i++)
+              _linhaDiaJornada(context, dias[i], nomes[i]),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text('${_dataCurta(inicio)} – ${_dataCurta(inicio.add(const Duration(days: 6)))}',
+                  style: const TextStyle(color: kMudo, fontSize: 11)),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _linhaDiaJornada(BuildContext context, DateTime data, String nome) {
+    final treino = app.treinoNo(data);
+    final concluido = app.feitos.contains(chaveData(data));
+    final hoje = DateUtils.isSameDay(data, DateTime.now());
+    final tituloDia = treino?.nome ?? 'Dia de descanso';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            padding: const EdgeInsets.symmetric(vertical: 7),
+            decoration: BoxDecoration(color: hoje ? kAzul.withOpacity(.22) : branco(.06), borderRadius: BorderRadius.circular(10)),
+            child: Column(children: [
+              Text(nome, style: const TextStyle(color: kMudo, fontSize: 10)),
+              Text('${data.day}', style: TextStyle(fontWeight: FontWeight.w800, color: hoje ? Colors.white : kMudo)),
+            ]),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(tituloDia, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(treino == null ? 'Recuperação e descanso' : (treino.foco.isEmpty ? '${treino.itens.length} exercícios' : treino.foco),
+                  maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: kMudo, fontSize: 11)),
+            ]),
+          ),
+          if (concluido)
+            const Icon(Icons.check_circle_rounded, color: Color(0xFF28C76F), size: 21)
+          else if (treino != null)
+            IconButton(
+              tooltip: 'Abrir treino',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TreinoTela(dia: treino))),
+              icon: const Icon(Icons.play_circle_fill_rounded, color: kAzul, size: 25),
+            )
+          else
+            const Icon(Icons.bedtime_outlined, color: kMudo, size: 19),
+        ],
+      ),
+    );
+  }
+
+  String _dataCurta(DateTime d) => '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
 }
 
 // ============================================================
@@ -1215,15 +1267,6 @@ class _DesempenhoEstado extends State<DesempenhoTela> {
       }
       if (dia != null) {
         for (final it in dia.itens) {
-          final g = it.grupo.isEmpty ? 'Outros' : it.grupo;
-          contagem[g] = (contagem[g] ?? 0) + 1;
-        }
-      }
-    }
-    // fallback: se não tiver sessões, usa o plano atual
-    if (contagem.isEmpty && app.plano.isNotEmpty) {
-      for (final d in app.plano) {
-        for (final it in d.itens) {
           final g = it.grupo.isEmpty ? 'Outros' : it.grupo;
           contagem[g] = (contagem[g] ?? 0) + 1;
         }
@@ -1312,8 +1355,8 @@ class _DesempenhoEstado extends State<DesempenhoTela> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _corpoSilhueta(true, ranking.take(4).map((e) => e.key).toList()),
-                      _corpoSilhueta(false, ranking.take(4).map((e) => e.key).toList()),
+                      _corpoSilhueta(true, ranking.map((e) => e.key).toList()),
+                      _corpoSilhueta(false, ranking.map((e) => e.key).toList()),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -1424,39 +1467,26 @@ class _DesempenhoEstado extends State<DesempenhoTela> {
     );
   }
 
-  Widget _corpoSilhueta(bool frente, List<String> top) {
-    // Representação simples com ícones de músculos destacados
-    final destaque = top.isNotEmpty;
+  Widget _corpoSilhueta(bool frente, List<String> grupos) {
     return Column(
       children: [
         Container(
-          width: 110,
-          height: 180,
+          width: 142,
+          height: 226,
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: branco(.06),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: branco(.12)),
+            color: branco(.045),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: branco(.10)),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.accessibility_new,
-                  size: 70, color: destaque ? kAzul : kMudo),
-              const SizedBox(height: 8),
-              Text(frente ? 'Frente' : 'Costas',
-                  style: const TextStyle(color: kMudo, fontSize: 12)),
-              if (destaque && top.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    top.take(2).join('\n'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 11, color: kAzul, fontWeight: FontWeight.w600),
-                  ),
-                ),
-            ],
+          child: CustomPaint(
+            painter: _MapaMuscularPainter(frente: frente, grupos: grupos),
+            child: const SizedBox.expand(),
           ),
         ),
+        const SizedBox(height: 7),
+        Text(frente ? 'FRENTE' : 'COSTAS',
+            style: const TextStyle(color: kMudo, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
       ],
     );
   }
@@ -1494,6 +1524,93 @@ class _DesempenhoEstado extends State<DesempenhoTela> {
     final fim = inicio.add(const Duration(days: 6));
     return '${inicio.day.toString().padLeft(2, "0")}/${inicio.month.toString().padLeft(2, "0")} a ${fim.day.toString().padLeft(2, "0")}/${fim.month.toString().padLeft(2, "0")}';
   }
+}
+
+
+class _MapaMuscularPainter extends CustomPainter {
+  final bool frente;
+  final List<String> grupos;
+  _MapaMuscularPainter({required this.frente, required this.grupos});
+
+  String _normalizar(String s) => s.toLowerCase()
+      .replaceAll('á', 'a').replaceAll('ã', 'a').replaceAll('â', 'a')
+      .replaceAll('é', 'e').replaceAll('ê', 'e').replaceAll('í', 'i')
+      .replaceAll('ó', 'o').replaceAll('ô', 'o').replaceAll('õ', 'o')
+      .replaceAll('ú', 'u').replaceAll('ç', 'c');
+
+  bool _ativo(List<String> termos) => grupos.any((g) {
+    final n = _normalizar(g);
+    return termos.any((t) => n.contains(t));
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final sx = size.width / 100, sy = size.height / 190;
+    canvas.save();
+    canvas.scale(sx, sy);
+    final base = Paint()..color = const Color(0xFF687080)..style = PaintingStyle.fill;
+    final contorno = Paint()..color = const Color(0xFF9AA4B5)..style = PaintingStyle.stroke..strokeWidth = 1.2;
+    final azul = Paint()..color = const Color(0xFF1680FF)..style = PaintingStyle.fill;
+    final azulBorda = Paint()..color = const Color(0xFF73B5FF)..style = PaintingStyle.stroke..strokeWidth = .8;
+    final cinzaMusculo = Paint()..color = const Color(0xFF8791A1)..style = PaintingStyle.fill;
+
+    final cabeca = Rect.fromCircle(center: const Offset(50, 12), radius: 8.5);
+    final pescoco = RRect.fromRectAndRadius(const Rect.fromLTRB(44, 20, 56, 34), const Radius.circular(4));
+    final tronco = Path()..moveTo(35, 31)..quadraticBezierTo(50, 25, 65, 31)
+      ..lineTo(73, 42)..lineTo(67, 83)..lineTo(62, 99)..lineTo(38, 99)
+      ..lineTo(33, 83)..lineTo(27, 42)..close();
+    final bracoE = Path()..moveTo(30, 35)..quadraticBezierTo(22, 33, 18, 43)
+      ..lineTo(12, 77)..quadraticBezierTo(11, 85, 17, 87)
+      ..quadraticBezierTo(22, 88, 24, 80)..lineTo(36, 49)..close();
+    final pernaE = Path()..moveTo(39, 94)..lineTo(49, 96)..lineTo(46, 139)
+      ..lineTo(43, 183)..quadraticBezierTo(37, 188, 29, 183)
+      ..lineTo(32, 139)..close();
+    final pernaD = Path()..moveTo(51, 96)..lineTo(61, 94)..lineTo(68, 139)
+      ..lineTo(71, 183)..quadraticBezierTo(63, 188, 57, 183)
+      ..lineTo(54, 139)..close();
+
+    canvas.drawOval(cabeca, base); canvas.drawRRect(pescoco, base);
+    canvas.drawPath(tronco, base); canvas.drawPath(bracoE, base);
+    canvas.save(); canvas.translate(100, 0); canvas.scale(-1, 1); canvas.drawPath(bracoE, base); canvas.restore();
+    canvas.drawPath(pernaE, base); canvas.drawPath(pernaD, base);
+
+    void oval(double x, double y, double rx, double ry, bool ligado) {
+      final r = Rect.fromCenter(center: Offset(x, y), width: rx * 2, height: ry * 2);
+      canvas.drawOval(r, ligado ? azul : cinzaMusculo);
+      canvas.drawOval(r, ligado ? azulBorda : contorno);
+    }
+    final peito = _ativo(['peito', 'peitoral']);
+    final costas = _ativo(['costas', 'dorsal', 'trapezio']);
+    final ombro = _ativo(['ombro', 'deltoide']);
+    final braco = _ativo(['biceps', 'triceps', 'braco']);
+    final perna = _ativo(['quadriceps', 'coxa', 'posterior', 'isquiotibiais']);
+    final gluteo = _ativo(['gluteo']);
+    final panturrilha = _ativo(['panturrilha', 'gemeos', 'panturrilhas']);
+    final abdomen = _ativo(['abdomen', 'abdominal', 'core']);
+
+    oval(31, 39, 8, 7, ombro); oval(69, 39, 8, 7, ombro);
+    if (frente) {
+      oval(41, 48, 10, 8, peito); oval(59, 48, 10, 8, peito);
+      for (var y = 61; y <= 82; y += 9) { oval(45, y.toDouble(), 4.2, 4, abdomen); oval(55, y.toDouble(), 4.2, 4, abdomen); }
+      oval(22, 61, 5, 12, braco); oval(78, 61, 5, 12, braco);
+      oval(39, 119, 7, 20, perna); oval(61, 119, 7, 20, perna);
+    } else {
+      oval(41, 53, 10, 16, costas); oval(59, 53, 10, 16, costas);
+      oval(50, 74, 8, 13, costas); oval(41, 91, 8, 7, gluteo); oval(59, 91, 8, 7, gluteo);
+      oval(22, 61, 5, 12, braco); oval(78, 61, 5, 12, braco);
+      oval(39, 119, 7, 20, perna); oval(61, 119, 7, 20, perna);
+    }
+    oval(37, 163, 5, 13, panturrilha); oval(63, 163, 5, 13, panturrilha);
+    canvas.drawPath(tronco, contorno); canvas.drawPath(bracoE, contorno);
+    canvas.save(); canvas.translate(100, 0); canvas.scale(-1, 1); canvas.drawPath(bracoE, contorno); canvas.restore();
+    canvas.drawPath(pernaE, contorno); canvas.drawPath(pernaD, contorno);
+    canvas.drawOval(cabeca, contorno);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _MapaMuscularPainter oldDelegate) =>
+      oldDelegate.frente != frente || oldDelegate.grupos != grupos;
 }
 
 class DetalhesIntensidadeTela extends StatelessWidget {

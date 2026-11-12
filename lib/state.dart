@@ -19,6 +19,19 @@ String norm(String s) {
 
 String chaveData(DateTime d) => '${d.year}-${d.month}-${d.day}';
 
+DateTime? dataDaChave(String valor) {
+  final partes = valor.split('-');
+  if (partes.length == 3) {
+    final ano = int.tryParse(partes[0]);
+    final mes = int.tryParse(partes[1]);
+    final dia = int.tryParse(partes[2]);
+    if (ano != null && mes != null && dia != null) {
+      try { return DateTime(ano, mes, dia); } catch (_) {}
+    }
+  }
+  return DateTime.tryParse(valor);
+}
+
 class Exercicio {
   final String id, nome, grupo, equip;
   final List<String> apelidos;
@@ -268,6 +281,7 @@ List<Dia> lerPlano(String bruto, List<Exercicio> lib) {
 class AppState extends ChangeNotifier {
   List<Exercicio> lib = [];
   List<Dia> plano = [];
+  DateTime? inicioPlano;
   Set<String> feitos = {};
   Map<String, String> cargas = {};
   Map<String, String> obs = {};
@@ -351,6 +365,18 @@ class AppState extends ChangeNotifier {
           .toList();
     }
     feitos = (_p.getStringList('feitos') ?? []).toSet();
+    final inicioSalvo = _p.getString('inicio_plano');
+    if (inicioSalvo != null) {
+      inicioPlano = DateTime.tryParse(inicioSalvo);
+    }
+    if (inicioPlano == null && (plano.isNotEmpty || feitos.isNotEmpty)) {
+      final datas = feitos.map(dataDaChave).whereType<DateTime>().toList();
+      if (datas.isNotEmpty) datas.sort();
+      final base = datas.isNotEmpty ? datas.first : DateTime.now();
+      inicioPlano = DateTime(base.year, base.month, base.day)
+          .subtract(Duration(days: base.weekday - 1));
+      await _p.setString('inicio_plano', inicioPlano!.toIso8601String());
+    }
     descanso = _p.getInt('descanso') ?? 75;
     metaAgua = _p.getInt('meta_agua') ?? 2500;
     metaPeso = _p.getDouble('meta_peso');
@@ -432,6 +458,12 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> salvarPlano(List<Dia> dias) async {
+    if (inicioPlano == null) {
+      final agora = DateTime.now();
+      inicioPlano = DateTime(agora.year, agora.month, agora.day)
+          .subtract(Duration(days: agora.weekday - 1));
+      await _p.setString('inicio_plano', inicioPlano!.toIso8601String());
+    }
     var n = 0;
     for (final d in dias) {
       for (final it in d.itens) {

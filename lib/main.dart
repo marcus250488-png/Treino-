@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'extras.dart';
 import 'state.dart';
 import 'telas.dart';
@@ -47,7 +46,16 @@ class Shell extends StatefulWidget {
 
 class _ShellEstado extends State<Shell> {
   int i = 0;
+  bool _compacto = false;
   void _ir(int n) => setState(() => i = n);
+
+  bool _aoRolar(ScrollNotification n) {
+    if (n is UserScrollNotification) {
+      final reduzir = n.direction == ScrollDirection.reverse;
+      if (reduzir != _compacto) setState(() => _compacto = reduzir);
+    }
+    return false;
+  }
 
   Widget _btn(int n, IconData icone, String rotulo) {
     final sel = i == n;
@@ -58,11 +66,14 @@ class _ShellEstado extends State<Shell> {
         onTap: () => _ir(n),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          width: 54,
-          height: 48,
+          width: _compacto ? 44 : 54,
+          height: _compacto ? 40 : 48,
           decoration: BoxDecoration(
-            color: sel ? branco(.16) : Colors.transparent,
+            color: sel ? branco(.18) : Colors.transparent,
             borderRadius: BorderRadius.circular(30),
+            boxShadow: sel
+                ? [BoxShadow(color: kAzul.withOpacity(.30), blurRadius: 16, spreadRadius: 1)]
+                : const [],
           ),
           child: Icon(icone, color: sel ? Colors.white : kMudo),
         ),
@@ -75,14 +86,17 @@ class _ShellEstado extends State<Shell> {
     return Scaffold(
       body: Stack(
         children: [
-          IndexedStack(
-            index: i,
-            children: [
-              InicioTela(irPara: _ir),
-              const EvolucaoTela(),
-              const BibliotecaTela(),
-              MaisTela(irPara: _ir),
-            ],
+          NotificationListener<ScrollNotification>(
+            onNotification: _aoRolar,
+            child: IndexedStack(
+              index: i,
+              children: [
+                InicioTela(irPara: _ir),
+                const EvolucaoTela(),
+                const BibliotecaTela(),
+                MaisTela(irPara: _ir),
+              ],
+            ),
           ),
           Positioned(
             left: 0,
@@ -91,7 +105,7 @@ class _ShellEstado extends State<Shell> {
             child: SafeArea(
               child: Center(
                 child: Vidro(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(_compacto ? 5 : 8),
                   raio: 40,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
