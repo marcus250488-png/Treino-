@@ -1,0 +1,39 @@
+MEU TREINO — PROJETO FLUTTER
+
+Este pacote contém o código-fonte Android/Flutter para versionamento no GitHub.
+A base atual prioriza uso individual/local e já inclui treinos, biblioteca, importação
+de PDF, execução, histórico, avaliação física, gráficos e registro de água.
+
+LEIA PRIMEIRO:
+- docs/ROADMAP_MVP.md: escopo, arquitetura-alvo, módulos futuros e dependências.
+- O login Google atual é opcional e não cria conta vinculada a academia nem sincroniza
+  os dados com servidor. Os registros atuais permanecem no aparelho.
+
+ENVIAR PELO TERMUX:
+1. Extraia a pasta treino_completo no armazenamento do celular.
+2. Abra o Termux e conceda acesso ao armazenamento: termux-setup-storage
+3. Entre na pasta extraída (o caminho exato depende de onde você a colocou).
+4. Inicialize o Git, configure usuário, adicione arquivos, faça commit e conecte ao
+   repositório GitHub conforme os comandos que serão enviados separadamente no chat.
+5. Envie para a branch main. O GitHub Actions executará a compilação.
+
+COMPILAR:
+- flutter pub get
+- flutter analyze
+- flutter build apk --release
+
+APK local:
+build/app/outputs/flutter-apk/app-release.apk
+
+GITHUB ACTIONS:
+O workflow em .github/workflows/build-apk.yml compila o APK em push para main ou
+por execução manual. O APK fica nos artefatos da execução do workflow.
+
+SEGURANÇA:
+Não envie keystore, senhas, tokens, key.properties, local.properties ou dados reais.
+O .gitignore já exclui arquivos locais e artefatos de compilação.
+
+IMPORTANTE:
+O projeto ainda não contém backend multiacademia, agendamento online, pagamentos,
+notificações push, painel de professor/administrador ou geração de treino por IA.
+Esses módulos estão documentados no roadmap e dependem de decisões e serviços reais.
