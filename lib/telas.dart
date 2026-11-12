@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart'
     show PdfDocument, PdfTextExtractor;
 import 'state.dart';
+import 'extras.dart' show MeuPlanoTela, DesempenhoTela;
 
 const kAzul = Color(0xFF0050E6);
 const kSuperf = Color(0xFF1C1C1E);

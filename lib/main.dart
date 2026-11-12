@@ -22,7 +22,6 @@ class TreinoApp extends StatelessWidget {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.transparent,
         colorScheme: const ColorScheme.dark(primary: kAzul, surface: kSuperf),
-        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
