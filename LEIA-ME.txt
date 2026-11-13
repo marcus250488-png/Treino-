@@ -37,3 +37,9 @@ IMPORTANTE:
 O projeto ainda não contém backend multiacademia, agendamento online, pagamentos,
 notificações push, painel de professor/administrador ou geração de treino por IA.
 Esses módulos estão documentados no roadmap e dependem de decisões e serviços reais.
+
+--- v0.6.0 ---
+* Evolução reformulada (lib/evolucao.dart): peso/meta/IMC, medidas com variação,
+  gráfico suave com toque e filtro de período, composição corporal, atalho p/ desempenho.
+* Seu desempenho (lib/desempenho.dart): tela resumo + tela completa (toque em "Seu desempenho").
+* Novo corpo anatômico com mapa de calor (lib/corpo.dart).
