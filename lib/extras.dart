@@ -497,6 +497,38 @@ class ConfigTela extends StatelessWidget {
   }
 }
 
+Future<void> _restaurar(BuildContext context) async {
+  final c = TextEditingController();
+  final dados = await Clipboard.getData('text/plain');
+  c.text = dados?.text ?? '';
+  if (!context.mounted) return;
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (d) => AlertDialog(
+      title: const Text('Restaurar dados'),
+      content: TextField(
+        controller: c,
+        maxLines: 6,
+        decoration: const InputDecoration(
+            hintText: 'Cole aqui o JSON exportado'),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(d, false),
+            child: const Text('Cancelar')),
+        TextButton(
+            onPressed: () => Navigator.pop(d, true),
+            child: const Text('Restaurar')),
+      ],
+    ),
+  );
+  if (ok != true) return;
+  final erro = await app.importar(c.text);
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(erro ?? 'Dados restaurados!')));
+}
+
 class PrivacidadeTela extends StatelessWidget {
   const PrivacidadeTela({super.key});
   @override
@@ -514,7 +546,7 @@ class PrivacidadeTela extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.w700)),
                 SizedBox(height: 6),
                 Text(
-                  'Seu treino importado, histórico de treinos, avaliações físicas, água, cargas e anotações ficam somente neste celular. Nada é enviado para servidores.',
+                  'Seu treino, histórico, avaliações, água, cargas e anotações ficam no celular e, se você entrou com o Google, também na sua conta na nuvem (Firebase). Cada conta só enxerga os próprios dados.',
                   style: TextStyle(color: kMudo),
                 ),
                 SizedBox(height: 14),
@@ -522,7 +554,7 @@ class PrivacidadeTela extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.w700)),
                 SizedBox(height: 6),
                 Text(
-                  'Usada só para mostrar seu nome, e-mail e foto no app. O login é opcional.',
+                  'Usada para mostrar seu nome e foto e para separar e salvar seus dados na nuvem. O login é opcional: sem ele, tudo fica só neste celular.',
                   style: TextStyle(color: kMudo),
                 ),
                 SizedBox(height: 14),
@@ -537,6 +569,43 @@ class PrivacidadeTela extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          ListenableBuilder(
+            listenable: app,
+            builder: (context, _) => Vidro(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Nuvem', style: titulo(26)),
+                  const SizedBox(height: 6),
+                  Text(
+                    app.uid == null
+                        ? 'Entre com o Google para salvar na nuvem.'
+                        : app.erroNuvem != null
+                            ? 'Sem conexão com a nuvem agora. Tentando de novo...'
+                            : app.ultimaSync == null
+                                ? 'Sincronizando...'
+                                : 'Salvo na nuvem (${app.email ?? ''}) às ${fmtDataIso(app.ultimaSync!.toIso8601String()).split(' ').last}',
+                    style: const TextStyle(color: kMudo),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    style: estiloContorno,
+                    onPressed: app.uid == null ? null : () => app.sincronizar(),
+                    icon: const Icon(Icons.cloud_sync_outlined),
+                    label: const Text('Sincronizar agora'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            style: estiloContorno,
+            onPressed: () => _restaurar(context),
+            icon: const Icon(Icons.restore),
+            label: const Text('Restaurar dados (colar JSON)'),
+          ),
+          const SizedBox(height: 10),
           FilledButton.icon(
             style: estiloPrimario,
             onPressed: () async {

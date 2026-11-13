@@ -152,7 +152,7 @@ class _LoginEstado extends State<LoginTela> {
               Text('Meu treino', style: titulo(46)),
               const SizedBox(height: 8),
               const Text(
-                'Entre com sua conta Google para ter sua foto e seu nome no app.',
+                'Entre com sua conta Google. Seus treinos e registros ficam salvos na nuvem, separados por conta.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: kMudo),
               ),

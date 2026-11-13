@@ -20,15 +20,28 @@ android {
 
     defaultConfig {
         applicationId = "com.marcus.treino_app"
-        minSdk = flutter.minSdkVersion
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    // Chave fixa (vem do GitHub Secrets). Sem ela, usa a chave de debug.
+    def chaveFixa = file("meutreino.jks")
+    signingConfigs {
+        release {
+            if (chaveFixa.exists()) {
+                storeFile = chaveFixa
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = "meutreino"
+                keyPassword = System.getenv("KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
+            signingConfig = chaveFixa.exists() ? signingConfigs.release : signingConfigs.debug
         }
     }
 }

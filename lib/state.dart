@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'firebase_config.dart';
 
 String norm(String s) {
   const from = 'áàâãäéèêëíìîïóòôõöúùûüçñ';
@@ -284,6 +289,7 @@ List<Dia> lerPlano(String bruto, List<Exercicio> lib) {
 // ---------- Estado do app ----------
 class AppState extends ChangeNotifier {
   List<Exercicio> lib = [];
+  List<Exercicio> _base = [];
   List<Dia> plano = [];
   DateTime? inicioPlano;
   Set<String> feitos = {};
@@ -297,13 +303,31 @@ class AppState extends ChangeNotifier {
   int descanso = 75;
   late SharedPreferences _p;
 
-  // Conta Google (opcional: o app funciona sem login)
-  final GoogleSignIn _g = GoogleSignIn(scopes: ['email']);
-  String? nome, email, foto;
+  // Conta Google + nuvem (Firebase). Cada conta tem seus próprios dados.
+  final GoogleSignIn _g =
+      GoogleSignIn(scopes: ['email'], serverClientId: kWebClientId);
+  String? nome, email, foto, uid;
   bool pulouLogin = false;
+  bool nuvemOk = false; // Firebase iniciou
+  bool _nuvemPronta = false; // primeira sincronização concluída
+  bool sincronizando = false;
+  String? erroNuvem;
+  DateTime? ultimaSync;
+  Timer? _timerEnvio, _timerRetry;
+  bool _aplicando = false;
+  String _pre = ''; // prefixo local por conta
+  String _k(String k) => '$_pre$k';
+
   bool get logado => email != null;
   String get primeiroNome =>
       (nome == null || nome!.trim().isEmpty) ? '' : nome!.trim().split(' ').first;
+
+  DocumentReference<Map<String, dynamic>> _doc(String u) => FirebaseFirestore
+      .instance
+      .collection('users')
+      .doc(u)
+      .collection('dados')
+      .doc('estado');
 
   void _guardarConta(GoogleSignInAccount? c) {
     nome = c?.displayName;
@@ -322,10 +346,26 @@ class AppState extends ChangeNotifier {
 
   /// Retorna null se deu certo, ou a mensagem de erro.
   Future<String?> entrar() async {
+    if (!nuvemOk) {
+      return 'A nuvem não iniciou${erroNuvem == null ? '' : ': $erroNuvem'}';
+    }
     try {
       final c = await _g.signIn();
       if (c == null) return 'Login cancelado';
+      final a = await c.authentication;
+      final cred = GoogleAuthProvider.credential(
+          accessToken: a.accessToken, idToken: a.idToken);
+      final r = await FirebaseAuth.instance.signInWithCredential(cred);
+      final u = r.user;
+      if (u == null) return 'Não consegui entrar com o Google.';
+      _timerEnvio?.cancel();
+      _nuvemPronta = false;
+      uid = u.uid;
+      await _p.setString('g_uid', u.uid);
+      _pre = 'u_${u.uid}_';
+      _carregarLocal();
       _guardarConta(c);
+      await sincronizar();
       notifyListeners();
       return null;
     } catch (e) {
@@ -334,12 +374,23 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> sair() async {
+    _enviar(); // garante o último envio antes de sair
     try {
       await _g.signOut();
     } catch (_) {}
+    try {
+      if (nuvemOk) await FirebaseAuth.instance.signOut();
+    } catch (_) {}
+    _timerEnvio?.cancel();
+    _timerRetry?.cancel();
     _guardarConta(null);
-    pulouLogin = true;
-    await _p.setBool('pulou_login', true);
+    uid = null;
+    await _p.remove('g_uid');
+    _pre = '';
+    _nuvemPronta = false;
+    pulouLogin = false; // volta para a tela de login (trocar de conta)
+    await _p.setBool('pulou_login', false);
+    _carregarLocal();
     notifyListeners();
   }
 
@@ -354,70 +405,272 @@ class AppState extends ChangeNotifier {
     final base =
         jsonDecode(await rootBundle.loadString('assets/exercicios.json'))
             as List;
-    lib = base
+    _base = base
         .map((e) => Exercicio.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
-    final c = _p.getString('custom');
-    if (c != null) {
-      lib.addAll((jsonDecode(c) as List).map(
-          (e) => Exercicio.fromJson(Map<String, dynamic>.from(e as Map))));
+    try {
+      await Firebase.initializeApp(options: kFirebaseOptions);
+      nuvemOk = true;
+    } catch (e) {
+      erroNuvem = '$e';
     }
-    final pl = _p.getString('plano');
-    if (pl != null) {
-      plano = (jsonDecode(pl) as List)
-          .map((e) => Dia.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-    }
-    feitos = (_p.getStringList('feitos') ?? []).toSet();
-    final inicioSalvo = _p.getString('inicio_plano');
-    if (inicioSalvo != null) {
-      inicioPlano = DateTime.tryParse(inicioSalvo);
-    }
-    if (inicioPlano == null && (plano.isNotEmpty || feitos.isNotEmpty)) {
-      final datas = feitos.map(dataDaChave).whereType<DateTime>().toList();
-      if (datas.isNotEmpty) datas.sort();
-      final base = datas.isNotEmpty ? datas.first : DateTime.now();
-      inicioPlano = DateTime(base.year, base.month, base.day)
-          .subtract(Duration(days: base.weekday - 1));
-      await _p.setString('inicio_plano', inicioPlano!.toIso8601String());
-    }
-    descanso = _p.getInt('descanso') ?? 75;
-    metaAgua = _p.getInt('meta_agua') ?? 2500;
-    metaPeso = _p.getDouble('meta_peso');
-    final ss = _p.getString('sessoes');
-    if (ss != null) {
-      sessoes = (jsonDecode(ss) as List)
-          .map((e) => Sessao.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-    }
-    final av = _p.getString('avaliacoes');
-    if (av != null) {
-      avaliacoes = (jsonDecode(av) as List)
-          .map((e) => Avaliacao.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-    }
-    final ag = _p.getString('agua');
-    if (ag != null) agua = Map<String, int>.from(jsonDecode(ag) as Map);
-    final ob = _p.getString('obs');
-    if (ob != null) obs = Map<String, String>.from(jsonDecode(ob) as Map);
     pulouLogin = _p.getBool('pulou_login') ?? false;
     final ge = _p.getString('g_email');
-    if (ge != null && ge.isNotEmpty) {
+    var u = _p.getString('g_uid');
+    if (nuvemOk) u = FirebaseAuth.instance.currentUser?.uid ?? u;
+    // Conta de versão antiga (sem nuvem): pede um novo login para sincronizar.
+    if (ge != null && ge.isNotEmpty && u != null && u.isNotEmpty) {
       email = ge;
+      uid = u;
       nome = _p.getString('g_nome');
       final gf = _p.getString('g_foto');
       foto = (gf == null || gf.isEmpty) ? null : gf;
-      // Atualiza foto/nome em segundo plano sem travar a abertura do app
+      _pre = 'u_${u}_';
+    }
+    _carregarLocal();
+    if (uid != null) {
       _g.signInSilently().then((c) {
         if (c != null) {
           _guardarConta(c);
           notifyListeners();
         }
       }).catchError((_) {});
+      unawaited(sincronizar());
     }
-    final cg = _p.getString('cargas');
-    if (cg != null) {
-      cargas = Map<String, String>.from(jsonDecode(cg) as Map);
+  }
+
+  // ---------- Leitura/gravação local (por conta) ----------
+  Map<String, dynamic> _lerLocal() => {
+        'plano': _p.getString(_k('plano')),
+        'custom': _p.getString(_k('custom')),
+        'feitos': _p.getStringList(_k('feitos')),
+        'inicio_plano': _p.getString(_k('inicio_plano')),
+        'descanso': _p.getInt(_k('descanso')),
+        'meta_agua': _p.getInt(_k('meta_agua')),
+        'meta_peso': _p.getDouble(_k('meta_peso')),
+        'sessoes': _p.getString(_k('sessoes')),
+        'avaliacoes': _p.getString(_k('avaliacoes')),
+        'agua': _p.getString(_k('agua')),
+        'obs': _p.getString(_k('obs')),
+        'cargas': _p.getString(_k('cargas')),
+      };
+
+  Map<String, dynamic> _empacotar() => {
+        'plano': jsonEncode(plano.map((d) => d.toJson()).toList()),
+        'custom': jsonEncode(
+            lib.where((e) => e.custom).map((e) => e.toJson()).toList()),
+        'feitos': feitos.toList(),
+        'inicio_plano': inicioPlano?.toIso8601String(),
+        'descanso': descanso,
+        'meta_agua': metaAgua,
+        'meta_peso': metaPeso,
+        'sessoes': jsonEncode(sessoes.map((e) => e.toJson()).toList()),
+        'avaliacoes': jsonEncode(avaliacoes.map((e) => e.toJson()).toList()),
+        'agua': jsonEncode(agua),
+        'obs': jsonEncode(obs),
+        'cargas': jsonEncode(cargas),
+        'atualizado_em': DateTime.now().toIso8601String(),
+      };
+
+  List _lista(dynamic s) => (s is String && s.isNotEmpty)
+      ? (jsonDecode(s) as List)
+      : <dynamic>[];
+  Map _mapa(dynamic s) => (s is String && s.isNotEmpty)
+      ? (jsonDecode(s) as Map)
+      : <dynamic, dynamic>{};
+
+  /// Coloca os dados do mapa (local ou nuvem) nos campos do app.
+  void _aplicar(Map<String, dynamic> d) {
+    plano = _lista(d['plano'])
+        .map((e) => Dia.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+    lib = [
+      ..._base,
+      ..._lista(d['custom'])
+          .map((e) => Exercicio.fromJson(Map<String, dynamic>.from(e as Map))),
+    ];
+    feitos = ((d['feitos'] as List?) ?? const []).map((e) => '$e').toSet();
+    final ini = d['inicio_plano'];
+    inicioPlano = ini is String ? DateTime.tryParse(ini) : null;
+    descanso = (d['descanso'] as num?)?.toInt() ?? 75;
+    metaAgua = (d['meta_agua'] as num?)?.toInt() ?? 2500;
+    metaPeso = (d['meta_peso'] as num?)?.toDouble();
+    sessoes = _lista(d['sessoes'])
+        .map((e) => Sessao.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+    avaliacoes = _lista(d['avaliacoes'])
+        .map((e) => Avaliacao.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+    agua = Map<String, int>.from(
+        _mapa(d['agua']).map((k, v) => MapEntry('$k', (v as num).toInt())));
+    obs = Map<String, String>.from(
+        _mapa(d['obs']).map((k, v) => MapEntry('$k', '$v')));
+    cargas = Map<String, String>.from(
+        _mapa(d['cargas']).map((k, v) => MapEntry('$k', '$v')));
+    if (inicioPlano == null && (plano.isNotEmpty || feitos.isNotEmpty)) {
+      final datas = feitos.map(dataDaChave).whereType<DateTime>().toList();
+      if (datas.isNotEmpty) datas.sort();
+      final b = datas.isNotEmpty ? datas.first : DateTime.now();
+      inicioPlano = DateTime(b.year, b.month, b.day)
+          .subtract(Duration(days: b.weekday - 1));
+    }
+  }
+
+  void _carregarLocal() => _aplicar(_lerLocal());
+
+  Future<void> _salvarTudoLocal() async {
+    final m = _empacotar();
+    await _p.setString(_k('plano'), m['plano'] as String);
+    await _p.setString(_k('custom'), m['custom'] as String);
+    await _p.setStringList(_k('feitos'), feitos.toList());
+    if (inicioPlano != null) {
+      await _p.setString(_k('inicio_plano'), inicioPlano!.toIso8601String());
+    } else {
+      await _p.remove(_k('inicio_plano'));
+    }
+    await _p.setInt(_k('descanso'), descanso);
+    await _p.setInt(_k('meta_agua'), metaAgua);
+    if (metaPeso != null) {
+      await _p.setDouble(_k('meta_peso'), metaPeso!);
+    } else {
+      await _p.remove(_k('meta_peso'));
+    }
+    await _p.setString(_k('sessoes'), m['sessoes'] as String);
+    await _p.setString(_k('avaliacoes'), m['avaliacoes'] as String);
+    await _p.setString(_k('agua'), m['agua'] as String);
+    await _p.setString(_k('obs'), m['obs'] as String);
+    await _p.setString(_k('cargas'), m['cargas'] as String);
+  }
+
+  // ---------- Nuvem ----------
+  void _agendarEnvio() {
+    if (_aplicando || uid == null || !nuvemOk) return;
+    _timerEnvio?.cancel();
+    _timerEnvio = Timer(const Duration(seconds: 2), _enviar);
+  }
+
+  void _enviar() {
+    final u = uid;
+    if (u == null || !nuvemOk || !_nuvemPronta) return;
+    try {
+      _doc(u).set(_empacotar()).then((_) {
+        ultimaSync = DateTime.now();
+        erroNuvem = null;
+      }).catchError((Object e) {
+        erroNuvem = '$e';
+      });
+    } catch (e) {
+      erroNuvem = '$e';
+    }
+  }
+
+  @override
+  void notifyListeners() {
+    super.notifyListeners();
+    _agendarEnvio();
+  }
+
+  /// Traz os dados da nuvem (ou envia os do aparelho se a conta é nova).
+  Future<void> sincronizar() async {
+    final u = uid;
+    if (u == null || !nuvemOk) return;
+    sincronizando = true;
+    try {
+      final snap =
+          await _doc(u).get().timeout(const Duration(seconds: 20));
+      final d = snap.data();
+      _aplicando = true;
+      if (snap.exists && d != null && d.isNotEmpty) {
+        _aplicar(d);
+        await _salvarTudoLocal();
+      } else {
+        await _adotarLegado();
+      }
+      _aplicando = false;
+      _nuvemPronta = true;
+      if (!(snap.exists && d != null && d.isNotEmpty)) _enviar();
+      erroNuvem = null;
+      ultimaSync = DateTime.now();
+      _timerRetry?.cancel();
+    } catch (e) {
+      _aplicando = false;
+      erroNuvem = '$e';
+      _timerRetry?.cancel();
+      _timerRetry = Timer(const Duration(seconds: 30), () => sincronizar());
+    } finally {
+      sincronizando = false;
+    }
+    notifyListeners();
+  }
+
+  /// Primeira conta a entrar neste aparelho leva os dados que já estavam nele.
+  Future<void> _adotarLegado() async {
+    final jaMigrou = _p.getBool('legado_migrado') ?? false;
+    const chaves = [
+      'plano', 'custom', 'feitos', 'inicio_plano', 'descanso', 'meta_agua',
+      'meta_peso', 'sessoes', 'avaliacoes', 'agua', 'obs', 'cargas'
+    ];
+    final temLegado = _p.getString('plano') != null ||
+        _p.getString('sessoes') != null ||
+        _p.getString('avaliacoes') != null;
+    if (jaMigrou || !temLegado) return;
+    final pre = _pre;
+    _pre = '';
+    _carregarLocal();
+    _pre = pre;
+    await _salvarTudoLocal();
+    await _p.setBool('legado_migrado', true);
+    for (final k in chaves) {
+      await _p.remove(k);
+    }
+  }
+
+  // ---------- Restaurar dados exportados ----------
+  Future<String?> importar(String texto) async {
+    try {
+      final m = jsonDecode(texto.trim()) as Map<String, dynamic>;
+      plano = ((m['plano'] as List?) ?? const [])
+          .map((e) => Dia.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      sessoes = ((m['sessoes'] as List?) ?? const [])
+          .map((e) => Sessao.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      avaliacoes = ((m['avaliacoes'] as List?) ?? const [])
+          .map((e) => Avaliacao.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      agua = Map<String, int>.from(((m['agua_ml_por_dia'] as Map?) ?? const {})
+          .map((k, v) => MapEntry('$k', (v as num).toInt())));
+      metaAgua = (m['meta_agua_ml'] as num?)?.toInt() ?? metaAgua;
+      metaPeso = (m['meta_peso'] as num?)?.toDouble();
+      descanso = (m['descanso_s'] as num?)?.toInt() ?? descanso;
+      cargas = Map<String, String>.from(((m['cargas'] as Map?) ?? const {})
+          .map((k, v) => MapEntry('$k', '$v')));
+      obs = Map<String, String>.from(((m['observacoes'] as Map?) ?? const {})
+          .map((k, v) => MapEntry('$k', '$v')));
+      feitos = ((m['dias_concluidos'] as List?) ?? const [])
+          .map((e) => '$e')
+          .toSet();
+      lib = [..._base, ...lib.where((e) => e.custom)];
+      for (final d in plano) {
+        for (final it in d.itens) {
+          if (it.exId.isNotEmpty && ex(it.exId) == null) {
+            lib.add(Exercicio(
+                id: it.exId, nome: it.nome, grupo: it.grupo, custom: true));
+          }
+        }
+      }
+      inicioPlano = null;
+      final datas = feitos.map(dataDaChave).whereType<DateTime>().toList();
+      if (datas.isNotEmpty) datas.sort();
+      final b = datas.isNotEmpty ? datas.first : DateTime.now();
+      inicioPlano = DateTime(b.year, b.month, b.day)
+          .subtract(Duration(days: b.weekday - 1));
+      await atualizarPlano();
+      await _salvarTudoLocal();
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return 'Texto inválido: $e';
     }
   }
 
@@ -447,8 +700,8 @@ class AppState extends ChangeNotifier {
     return plano.first;
   }
 
-  Future<void> _salvarCustom() => _p.setString(
-      'custom', jsonEncode(lib.where((e) => e.custom).map((e) => e.toJson()).toList()));
+  Future<void> _salvarCustom() => _p.setString(_k('custom'),
+      jsonEncode(lib.where((e) => e.custom).map((e) => e.toJson()).toList()));
 
   Future<void> addCustom(String nome, String grupo) async {
     lib.add(Exercicio(
@@ -461,29 +714,19 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> salvarPlano(List<Dia> dias) async {
+  Future<void> _garantirInicio() async {
     if (inicioPlano == null) {
       final agora = DateTime.now();
       inicioPlano = DateTime(agora.year, agora.month, agora.day)
           .subtract(Duration(days: agora.weekday - 1));
-      await _p.setString('inicio_plano', inicioPlano!.toIso8601String());
+      await _p.setString(_k('inicio_plano'), inicioPlano!.toIso8601String());
     }
-    var n = 0;
-    for (final d in dias) {
-      for (final it in d.itens) {
-        if (it.exId.isEmpty) {
-          final id = 'c_${DateTime.now().microsecondsSinceEpoch}_${n++}';
-          lib.add(Exercicio(
-              id: id, nome: it.nome, grupo: it.grupo, custom: true));
-          it.exId = id;
-        }
-      }
-    }
+  }
+
+  Future<void> salvarPlano(List<Dia> dias) async {
+    await _garantirInicio();
     plano = dias;
-    await _salvarCustom();
-    await _p.setString(
-        'plano', jsonEncode(plano.map((d) => d.toJson()).toList()));
-    notifyListeners();
+    await atualizarPlano();
   }
 
   /// Salva o plano atual depois de editar exercícios/dias (trocar, reordenar...).
@@ -501,7 +744,7 @@ class AppState extends ChangeNotifier {
     }
     await _salvarCustom();
     await _p.setString(
-        'plano', jsonEncode(plano.map((d) => d.toJson()).toList()));
+        _k('plano'), jsonEncode(plano.map((d) => d.toJson()).toList()));
     notifyListeners();
   }
 
@@ -519,7 +762,7 @@ class AppState extends ChangeNotifier {
   Future<void> excluirSessao(Sessao s) async {
     sessoes.removeWhere((x) => x.data == s.data);
     await _p.setString(
-        'sessoes', jsonEncode(sessoes.map((e) => e.toJson()).toList()));
+        _k('sessoes'), jsonEncode(sessoes.map((e) => e.toJson()).toList()));
     // Se não sobrou nenhum treino completo do plano nesse dia, desmarca o dia.
     final dt = DateTime.tryParse(s.data);
     if (dt != null && s.completo && !s.livre) {
@@ -530,7 +773,7 @@ class AppState extends ChangeNotifier {
       });
       if (!aindaTem) {
         feitos.remove(k);
-        await _p.setStringList('feitos', feitos.toList());
+        await _p.setStringList(_k('feitos'), feitos.toList());
       }
     }
     notifyListeners();
@@ -538,7 +781,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> concluirDia(DateTime d) async {
     feitos.add(chaveData(d));
-    await _p.setStringList('feitos', feitos.toList());
+    await _p.setStringList(_k('feitos'), feitos.toList());
     notifyListeners();
   }
 
@@ -548,38 +791,39 @@ class AppState extends ChangeNotifier {
     } else {
       obs[id] = v;
     }
-    await _p.setString('obs', jsonEncode(obs));
+    await _p.setString(_k('obs'), jsonEncode(obs));
+    _agendarEnvio();
   }
 
   Future<void> setDescanso(int s) async {
     descanso = s;
-    await _p.setInt('descanso', s);
+    await _p.setInt(_k('descanso'), s);
     notifyListeners();
   }
 
   Future<void> addSessao(Sessao s) async {
     sessoes.add(s);
     await _p.setString(
-        'sessoes', jsonEncode(sessoes.map((e) => e.toJson()).toList()));
+        _k('sessoes'), jsonEncode(sessoes.map((e) => e.toJson()).toList()));
     notifyListeners();
   }
 
   Future<void> addAvaliacao(Map<String, double> v) async {
     avaliacoes.add(Avaliacao(data: DateTime.now().toIso8601String(), v: v));
-    await _p.setString(
-        'avaliacoes', jsonEncode(avaliacoes.map((e) => e.toJson()).toList()));
+    await _p.setString(_k('avaliacoes'),
+        jsonEncode(avaliacoes.map((e) => e.toJson()).toList()));
     notifyListeners();
   }
 
   Future<void> setMetaPeso(double v) async {
     metaPeso = v;
-    await _p.setDouble('meta_peso', v);
+    await _p.setDouble(_k('meta_peso'), v);
     notifyListeners();
   }
 
   Future<void> setMetaAgua(int ml) async {
     metaAgua = ml;
-    await _p.setInt('meta_agua', ml);
+    await _p.setInt(_k('meta_agua'), ml);
     notifyListeners();
   }
 
@@ -587,7 +831,7 @@ class AppState extends ChangeNotifier {
     final k = chaveData(d);
     final novo = (agua[k] ?? 0) + ml;
     agua[k] = novo < 0 ? 0 : novo;
-    await _p.setString('agua', jsonEncode(agua));
+    await _p.setString(_k('agua'), jsonEncode(agua));
     notifyListeners();
   }
 
@@ -608,7 +852,8 @@ class AppState extends ChangeNotifier {
 
   Future<void> setCarga(String id, String v) async {
     cargas[id] = v;
-    await _p.setString('cargas', jsonEncode(cargas));
+    await _p.setString(_k('cargas'), jsonEncode(cargas));
+    _agendarEnvio();
   }
 }
 
