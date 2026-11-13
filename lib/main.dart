@@ -4,6 +4,7 @@ import 'extras.dart';
 import 'evolucao.dart';
 import 'state.dart';
 import 'telas.dart';
+import 'transicao.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,7 @@ class TreinoApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
+        pageTransitionsTheme: kTransicoes,
         scaffoldBackgroundColor: Colors.transparent,
         colorScheme: const ColorScheme.dark(primary: kAzul, surface: kSuperf),
         appBarTheme: const AppBarTheme(

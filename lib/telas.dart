@@ -6,7 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart'
     show PdfDocument, PdfTextExtractor;
 import 'state.dart';
-import 'extras.dart' show MeuPlanoTela;
+import 'extras.dart' show MeuPlanoTela, fmtNum;
+import 'edicao.dart';
 import 'desempenho.dart' show DesempenhoTela;
 
 const kAzul = Color(0xFF0050E6);
@@ -395,6 +396,57 @@ class _InicioEstado extends State<InicioTela> {
                 ),
               ),
               const SizedBox(height: 14),
+              Material(
+                color: branco(.07),
+                borderRadius: BorderRadius.circular(22),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(22),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TreinoLivreTela()),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: branco(.14)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: kAzul.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(Icons.add_circle_outline,
+                              color: kAzul),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Treino livre',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16)),
+                              SizedBox(height: 3),
+                              Text(
+                                'Monte e faça um treino na hora, fora do plano',
+                                style: TextStyle(color: kMudo, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, color: kMudo),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               // Card Detalhes do plano de treino
               Material(
                 color: branco(.07),
@@ -703,8 +755,27 @@ class TreinoTela extends StatelessWidget {
   const TreinoTela({super.key, required this.dia});
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: app,
+      builder: (context, _) => _corpo(context),
+    );
+  }
+
+  Widget _corpo(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(dia.nome, style: titulo(28))),
+      appBar: AppBar(
+        title: Text(dia.nome, style: titulo(28)),
+        actions: [
+          IconButton(
+            tooltip: 'Editar treino (trocar e reordenar)',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => EditarDiaTela(dia: dia)),
+            ),
+            icon: const Icon(Icons.edit_outlined),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
         children: [
@@ -757,10 +828,12 @@ class TreinoTela extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: FilledButton.icon(
             style: estiloPrimario,
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => RunTela(dia: dia)),
-            ),
+            onPressed: dia.itens.isEmpty
+                ? null
+                : () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => RunTela(dia: dia)),
+                    ),
             icon: const Icon(Icons.play_arrow_rounded),
             label: const Text('Começar'),
           ),
@@ -881,9 +954,27 @@ class _DetalheExEstado extends State<_DetalheEx> {
 }
 
 // ---------- Execução do treino ----------
+class _ResumoEx {
+  final String nome, grupo, reps;
+  final List<double> cargas;
+  _ResumoEx(this.nome, this.grupo, this.reps, this.cargas);
+
+  String get texto {
+    final n = cargas.length;
+    final s = n == 1 ? 'série' : 'séries';
+    final usadas = cargas.where((c) => c > 0).toList();
+    if (usadas.isEmpty) return '$n $s • $reps reps';
+    if (usadas.every((c) => c == usadas.first) && usadas.length == n) {
+      return '$n × $reps • ${fmtNum(usadas.first)} kg';
+    }
+    return '$n $s • ${cargas.map(fmtNum).join(' / ')} kg';
+  }
+}
+
 class RunTela extends StatefulWidget {
   final Dia dia;
-  const RunTela({super.key, required this.dia});
+  final bool livre;
+  const RunTela({super.key, required this.dia, this.livre = false});
   @override
   State<RunTela> createState() => _RunEstado();
 }
@@ -894,6 +985,8 @@ class _RunEstado extends State<RunTela> {
   double volume = 0;
   late Timer _t;
   final _carga = TextEditingController();
+  final List<_ResumoEx> resumo = [];
+  final List<double> _cargasEx = [];
   Item get it => widget.dia.itens[ei];
 
   @override
@@ -923,6 +1016,12 @@ class _RunEstado extends State<RunTela> {
     final cg = double.tryParse(_carga.text.trim().replaceAll(',', '.')) ?? 0;
     volume += cg * repsMedio(it.reps);
     feitasSeries++;
+    _cargasEx.add(cg);
+    if (si + 1 >= it.series) {
+      resumo.add(_ResumoEx(app.ex(it.exId)?.nome ?? it.nome, it.grupo,
+          it.reps, List<double>.from(_cargasEx)));
+      _cargasEx.clear();
+    }
     if (si + 1 < it.series) {
       setState(() {
         si++;
@@ -943,6 +1042,12 @@ class _RunEstado extends State<RunTela> {
   Future<void> _fim({bool parcial = false}) async {
     _t.cancel();
     final total = widget.dia.itens.fold<int>(0, (s, e) => s + e.series);
+    // Exercício que ficou pela metade entra no resumo como parcial.
+    if (_cargasEx.isNotEmpty) {
+      resumo.add(_ResumoEx(app.ex(it.exId)?.nome ?? it.nome, it.grupo,
+          it.reps, List<double>.from(_cargasEx)));
+      _cargasEx.clear();
+    }
     if (parcial && feitasSeries == 0) {
       if (!mounted) return;
       Navigator.of(context).popUntil((r) => r.isFirst);
@@ -956,16 +1061,32 @@ class _RunEstado extends State<RunTela> {
       seriesTotal: total,
       volume: volume,
       completo: !parcial,
+      livre: widget.livre,
     ));
-    if (!parcial) await app.concluirDia(DateTime.now());
+    if (!parcial && !widget.livre) await app.concluirDia(DateTime.now());
     if (!mounted) return;
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (c) => AlertDialog(
         title: Text(parcial ? 'Treino parcial salvo' : 'Treino concluído'),
-        content: Text(
-            'Duração: ${_fmt(seg)}\nSéries: $feitasSeries de $total\nVolume: ${volume.round()} kg'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                  'Duração: ${_fmt(seg)}\nSéries: $feitasSeries de $total\nVolume: ${volume.round()} kg'),
+              const SizedBox(height: 12),
+              for (final r in resumo)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text('• ${r.nome}\n   ${r.texto}',
+                      style: const TextStyle(color: kMudo, fontSize: 13)),
+                ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c), child: const Text('OK'))
         ],
@@ -1080,6 +1201,39 @@ class _RunEstado extends State<RunTela> {
                 child: Text('Próximo: ${prox.nome}',
                     style: const TextStyle(color: kMudo)),
               ),
+            if (resumo.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Text('Resumo do treino', style: titulo(26)),
+              const SizedBox(height: 8),
+              for (final r in resumo)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Vidro(
+                    padding: const EdgeInsets.all(14),
+                    raio: 20,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: kAzul),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(r.nome,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 2),
+                              Text('${r.grupo} • ${r.texto}',
+                                  style: const TextStyle(
+                                      color: kMudo, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ],
         ),
       ),
@@ -1375,16 +1529,8 @@ class _ImpEstado extends State<ImportarTela> {
     }
   }
 
-  Future<void> _trocar(Item it) async {
-    final e = await Navigator.push<Exercicio>(
-      context,
-      MaterialPageRoute(builder: (_) => const BibliotecaTela(selecionar: true)),
-    );
-    if (e != null) setState(() => it.exId = e.id);
-  }
-
   Future<void> _salvar() async {
-    await app.salvarPlano(dias);
+    await app.salvarPlano(dias.where((d) => d.itens.isNotEmpty).toList());
     if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('Treino salvo!')));
@@ -1415,10 +1561,15 @@ class _ImpEstado extends State<ImportarTela> {
             ),
           if (dias.isNotEmpty) ...[
             const SizedBox(height: 16),
+            const Text(
+              'Toque no nome para trocar o exercício, arraste ≡ para reordenar.',
+              style: TextStyle(color: kMudo, fontSize: 12),
+            ),
+            const SizedBox(height: 4),
             Text(
               semMatch == 0
                   ? 'Tudo encontrado na biblioteca.'
-                  : '$semMatch sem correspondência: toque para escolher ou salve para criar como novo.',
+                  : '$semMatch sem correspondência: toque no nome para escolher na biblioteca ou salve para criar como novo.',
               style: const TextStyle(color: kMudo),
             ),
             for (final d in dias) ...[
@@ -1427,33 +1578,16 @@ class _ImpEstado extends State<ImportarTela> {
               if (d.foco.isNotEmpty)
                 Text(d.foco, style: const TextStyle(color: kMudo)),
               const SizedBox(height: 6),
-              for (final it in d.itens)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Material(
-                    color: branco(.06),
-                    borderRadius: BorderRadius.circular(16),
-                    child: ListTile(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      leading: Icon(
-                        it.exId.isEmpty
-                            ? Icons.warning_amber_rounded
-                            : Icons.check_circle,
-                        color: it.exId.isEmpty ? Colors.amber : kAzul,
-                      ),
-                      title: Text(it.nome),
-                      subtitle: Text(
-                        it.exId.isEmpty
-                            ? 'Sem correspondência'
-                            : '→ ${app.ex(it.exId)?.nome ?? ''}',
-                        style: const TextStyle(color: kMudo),
-                      ),
-                      trailing: Text('${it.series}×${it.reps}'),
-                      onTap: () => _trocar(it),
-                    ),
-                  ),
-                ),
+              ListaItensEditavel(
+                itens: d.itens,
+                onChanged: () => setState(() {}),
+              ),
+              TextButton.icon(
+                onPressed: () => adicionarExercicioA(
+                    context, d.itens, () => setState(() {})),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Adicionar exercício'),
+              ),
             ],
             const SizedBox(height: 20),
             FilledButton(

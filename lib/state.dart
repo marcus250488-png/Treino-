@@ -64,8 +64,8 @@ class Exercicio {
 
 class Item {
   String exId;
-  final String nome, grupo, reps;
-  final int series;
+  String nome, grupo, reps;
+  int series;
   Item({
     required this.exId,
     required this.nome,
@@ -121,6 +121,7 @@ class Sessao {
   final int seg, series, seriesTotal;
   final double volume;
   final bool completo;
+  final bool livre;
   Sessao({
     required this.data,
     required this.dia,
@@ -129,6 +130,7 @@ class Sessao {
     required this.seriesTotal,
     required this.volume,
     required this.completo,
+    this.livre = false,
   });
   factory Sessao.fromJson(Map<String, dynamic> j) => Sessao(
         data: j['data'] as String,
@@ -138,6 +140,7 @@ class Sessao {
         seriesTotal: j['seriesTotal'] as int,
         volume: (j['volume'] as num).toDouble(),
         completo: j['completo'] as bool,
+        livre: (j['livre'] ?? false) as bool,
       );
   Map<String, dynamic> toJson() => {
         'data': data,
@@ -147,6 +150,7 @@ class Sessao {
         'seriesTotal': seriesTotal,
         'volume': volume,
         'completo': completo,
+        'livre': livre,
       };
 }
 
@@ -479,6 +483,56 @@ class AppState extends ChangeNotifier {
     await _salvarCustom();
     await _p.setString(
         'plano', jsonEncode(plano.map((d) => d.toJson()).toList()));
+    notifyListeners();
+  }
+
+  /// Salva o plano atual depois de editar exercícios/dias (trocar, reordenar...).
+  Future<void> atualizarPlano() async {
+    plano.sort((a, b) => a.weekday.compareTo(b.weekday));
+    var n = 0;
+    for (final d in plano) {
+      for (final it in d.itens) {
+        if (it.exId.isEmpty) {
+          final id = 'c_${DateTime.now().microsecondsSinceEpoch}_${n++}';
+          lib.add(Exercicio(id: id, nome: it.nome, grupo: it.grupo, custom: true));
+          it.exId = id;
+        }
+      }
+    }
+    await _salvarCustom();
+    await _p.setString(
+        'plano', jsonEncode(plano.map((d) => d.toJson()).toList()));
+    notifyListeners();
+  }
+
+  Future<void> adicionarDia(Dia d) async {
+    plano.add(d);
+    await atualizarPlano();
+  }
+
+  Future<void> removerDia(Dia d) async {
+    plano.remove(d);
+    await atualizarPlano();
+  }
+
+  /// Exclui um treino do histórico (ex.: treino de teste).
+  Future<void> excluirSessao(Sessao s) async {
+    sessoes.removeWhere((x) => x.data == s.data);
+    await _p.setString(
+        'sessoes', jsonEncode(sessoes.map((e) => e.toJson()).toList()));
+    // Se não sobrou nenhum treino completo do plano nesse dia, desmarca o dia.
+    final dt = DateTime.tryParse(s.data);
+    if (dt != null && s.completo && !s.livre) {
+      final k = chaveData(dt);
+      final aindaTem = sessoes.any((x) {
+        final d = DateTime.tryParse(x.data);
+        return d != null && x.completo && !x.livre && chaveData(d) == k;
+      });
+      if (!aindaTem) {
+        feitos.remove(k);
+        await _p.setStringList('feitos', feitos.toList());
+      }
+    }
     notifyListeners();
   }
 

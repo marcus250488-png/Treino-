@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'state.dart';
 import 'telas.dart';
+import 'edicao.dart';
 
 // ---------- Utilidades ----------
 String _d2(int n) => n.toString().padLeft(2, '0');
@@ -99,6 +100,26 @@ class _DialogoNumeroEstado extends State<_DialogoNumero> {
 // ---------- Histórico de treinos ----------
 class HistoricoTela extends StatelessWidget {
   const HistoricoTela({super.key});
+
+  Future<void> _excluir(BuildContext context, Sessao s) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Excluir este treino?'),
+        content: Text(
+            '${s.dia} • ${fmtDataIso(s.data)}\n\nEle sai do histórico e das estatísticas. Isso não pode ser desfeito.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Excluir')),
+        ],
+      ),
+    );
+    if (ok == true) await app.excluirSessao(s);
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -168,6 +189,12 @@ class HistoricoTela extends StatelessWidget {
                           ),
                           child: Text(s.completo ? 'Completo' : 'Parcial',
                               style: const TextStyle(fontSize: 12)),
+                        ),
+                        IconButton(
+                          tooltip: 'Excluir treino',
+                          onPressed: () => _excluir(context, s),
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.redAccent),
                         ),
                       ],
                     ),
@@ -399,6 +426,12 @@ class MaisTela extends StatelessWidget {
             children: [
               Text('Mais', style: titulo(34)),
               const SizedBox(height: 12),
+              _item(Icons.add_circle_outline, 'Treino livre',
+                  'Monte e faça um treino fora do plano',
+                  () => _abrir(context, const TreinoLivreTela())),
+              _item(Icons.edit_outlined, 'Editar plano de treino',
+                  'Trocar, reordenar e excluir exercícios',
+                  () => _abrir(context, const EditarPlanoTela())),
               _item(Icons.history, 'Histórico de treinos',
                   '${app.sessoes.length} treino(s) registrado(s)',
                   () => _abrir(context, const HistoricoTela())),
@@ -609,12 +642,10 @@ class MeuPlanoTela extends StatelessWidget {
                     const SizedBox(height: 16),
                     OutlinedButton.icon(
                       style: estiloContorno,
-                      onPressed: () {
-                        // abre importar / editar
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Use a aba Mais > Importar treino (PDF) para editar o plano.')),
-                        );
-                      },
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const EditarPlanoTela()),
+                      ),
                       icon: const Icon(Icons.settings_outlined),
                       label: const Text('Editar meu plano de treino'),
                     ),
