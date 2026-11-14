@@ -204,7 +204,7 @@ class InicioTela extends StatefulWidget {
 class _InicioEstado extends State<InicioTela> {
   late final PageController _pc;
   late int _sel; // 0 = Dom ... 6 = Sáb
-  int _sem = 0; // semanas à frente (+) ou atrás (-)
+  int _semOff = 0; // semanas à frente (+) ou atrás (-)
 
   @override
   void initState() {
@@ -308,7 +308,7 @@ class _InicioEstado extends State<InicioTela> {
         final hoje = DateTime.now();
         final domingo = DateTime(hoje.year, hoje.month, hoje.day)
             .subtract(Duration(days: hoje.weekday % 7))
-            .add(Duration(days: 7 * _sem));
+            .add(Duration(days: 7 * _semOff));
         final semana =
             List.generate(7, (i) => domingo.add(Duration(days: i)));
         final nFeitos =
@@ -344,13 +344,13 @@ class _InicioEstado extends State<InicioTela> {
                 children: [
                   IconButton(
                     visualDensity: VisualDensity.compact,
-                    onPressed: () => setState(() => _sem--),
+                    onPressed: () => setState(() => _semOff--),
                     icon: const Icon(Icons.chevron_left, color: kMudo),
                   ),
                   GestureDetector(
-                    onTap: _sem == 0 ? null : () => setState(() => _sem = 0),
+                    onTap: _semOff == 0 ? null : () => setState(() => _semOff = 0),
                     child: Text(
-                      _sem == 0
+                      _semOff == 0
                           ? 'Esta semana'
                           : '${semana.first.day}/${semana.first.month} a ${semana.last.day}/${semana.last.month}  •  voltar para hoje',
                       style: const TextStyle(color: kMudo, fontSize: 13),
@@ -358,7 +358,7 @@ class _InicioEstado extends State<InicioTela> {
                   ),
                   IconButton(
                     visualDensity: VisualDensity.compact,
-                    onPressed: () => setState(() => _sem++),
+                    onPressed: () => setState(() => _semOff++),
                     icon: const Icon(Icons.chevron_right, color: kMudo),
                   ),
                 ],
@@ -368,9 +368,9 @@ class _InicioEstado extends State<InicioTela> {
                 onHorizontalDragEnd: (d) {
                   final v = d.primaryVelocity ?? 0;
                   if (v < -200) {
-                    setState(() => _sem++);
+                    setState(() => _semOff++);
                   } else if (v > 200) {
-                    setState(() => _sem--);
+                    setState(() => _semOff--);
                   }
                 },
                 child: AnimatedSwitcher(
@@ -378,7 +378,7 @@ class _InicioEstado extends State<InicioTela> {
                   transitionBuilder: (c, a) =>
                       FadeTransition(opacity: a, child: c),
                   child: Row(
-                    key: ValueKey(_sem),
+                    key: ValueKey(_semOff),
                     children: [
                       for (var i = 0; i < 7; i++) _diaBtn(i, semana[i], hoje),
                     ],
