@@ -1929,6 +1929,7 @@ class _PerfilEstado extends State<PerfilTela> {
       return;
     }
     await app.salvarPerfil({
+      ...app.perfil,
       'sexo': _sexo,
       'nasc': _nasc!.toIso8601String(),
       'altura': _num(_altura.text),

@@ -11,6 +11,7 @@ import 'edicao.dart';
 import 'fotos.dart';
 import 'cardio.dart';
 import 'ex_edit.dart';
+import 'passos.dart';
 import 'desempenho.dart' show DesempenhoTela;
 
 const kAzul = Color(0xFF0050E6);
@@ -203,6 +204,7 @@ class InicioTela extends StatefulWidget {
 class _InicioEstado extends State<InicioTela> {
   late final PageController _pc;
   late int _sel; // 0 = Dom ... 6 = Sáb
+  int _sem = 0; // semanas à frente (+) ou atrás (-)
 
   @override
   void initState() {
@@ -305,7 +307,8 @@ class _InicioEstado extends State<InicioTela> {
       builder: (context, _) {
         final hoje = DateTime.now();
         final domingo = DateTime(hoje.year, hoje.month, hoje.day)
-            .subtract(Duration(days: hoje.weekday % 7));
+            .subtract(Duration(days: hoje.weekday % 7))
+            .add(Duration(days: 7 * _sem));
         final semana =
             List.generate(7, (i) => domingo.add(Duration(days: i)));
         final nFeitos =
@@ -337,9 +340,50 @@ class _InicioEstado extends State<InicioTela> {
               ),
               const SizedBox(height: 18),
               Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  for (var i = 0; i < 7; i++) _diaBtn(i, semana[i], hoje),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => setState(() => _sem--),
+                    icon: const Icon(Icons.chevron_left, color: kMudo),
+                  ),
+                  GestureDetector(
+                    onTap: _sem == 0 ? null : () => setState(() => _sem = 0),
+                    child: Text(
+                      _sem == 0
+                          ? 'Esta semana'
+                          : '${semana.first.day}/${semana.first.month} a ${semana.last.day}/${semana.last.month}  •  voltar para hoje',
+                      style: const TextStyle(color: kMudo, fontSize: 13),
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => setState(() => _sem++),
+                    icon: const Icon(Icons.chevron_right, color: kMudo),
+                  ),
                 ],
+              ),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragEnd: (d) {
+                  final v = d.primaryVelocity ?? 0;
+                  if (v < -200) {
+                    setState(() => _sem++);
+                  } else if (v > 200) {
+                    setState(() => _sem--);
+                  }
+                },
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  transitionBuilder: (c, a) =>
+                      FadeTransition(opacity: a, child: c),
+                  child: Row(
+                    key: ValueKey(_sem),
+                    children: [
+                      for (var i = 0; i < 7; i++) _diaBtn(i, semana[i], hoje),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 18),
               if (app.plano.isEmpty)
@@ -398,6 +442,8 @@ class _InicioEstado extends State<InicioTela> {
                   ],
                 ),
               ),
+              const SizedBox(height: 14),
+              const PassosCard(),
               const SizedBox(height: 14),
               Material(
                 color: branco(.07),

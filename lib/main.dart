@@ -6,6 +6,7 @@ import 'state.dart';
 import 'telas.dart';
 import 'transicao.dart';
 import 'nutricao.dart';
+import 'passos.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,6 +61,15 @@ class Shell extends StatefulWidget {
 class _ShellEstado extends State<Shell> {
   int i = 0;
   bool _compacto = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) pedirPermissoesInicial(context);
+    });
+  }
+
   void _ir(int n) => setState(() => i = n);
 
   bool _aoRolar(ScrollNotification n) {

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:permission_handler/permission_handler.dart' show Permission;
+import 'package:pedometer/pedometer.dart' show Pedometer, StepCount;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_sign_in/google_sign_in.dart';
@@ -337,6 +339,16 @@ class AppState extends ChangeNotifier {
   int descanso = 75;
   late SharedPreferences _p;
 
+  // Passos e academia
+  Map<String, int> passos = {};
+  int metaPassos = 10000;
+  final ValueNotifier<int> passosHoje = ValueNotifier<int>(0);
+  bool passosAtivo = false;
+  String? erroPassos;
+  StreamSubscription<StepCount>? _subPassos;
+  Timer? _timerPassos;
+  int? _ultimoTotal; // total do sensor já contabilizado
+
   // Nutrição
   List<Alimento> _alimBase = [];
   List<Alimento> alimentos = [];
@@ -480,6 +492,7 @@ class AppState extends ChangeNotifier {
       _pre = 'u_${u}_';
     }
     _carregarLocal();
+    unawaited(iniciarPassos());
     if (uid != null) {
       _g.signInSilently().then((c) {
         if (c != null) {
@@ -511,6 +524,8 @@ class AppState extends ChangeNotifier {
         'perfil': _p.getString(_k('perfil')),
         'diario': _p.getString(_k('diario')),
         'cardapio': _p.getString(_k('cardapio')),
+        'passos': _p.getString(_k('passos')),
+        'passos_meta': _p.getInt(_k('passos_meta')),
       };
 
   Map<String, dynamic> _empacotar() => {
@@ -534,6 +549,8 @@ class AppState extends ChangeNotifier {
         'perfil': jsonEncode(perfil),
         'diario': jsonEncode(diario),
         'cardapio': jsonEncode(cardapio),
+        'passos': jsonEncode(passos),
+        'passos_meta': metaPassos,
         'atualizado_em': DateTime.now().toIso8601String(),
       };
 
@@ -554,6 +571,10 @@ class AppState extends ChangeNotifier {
     perfil = Map<String, dynamic>.from(_mapa(d['perfil']));
     diario = Map<String, dynamic>.from(_mapa(d['diario']));
     cardapio = Map<String, dynamic>.from(_mapa(d['cardapio']));
+    passos = Map<String, int>.from(
+        _mapa(d['passos']).map((k, v) => MapEntry('$k', (v as num).toInt())));
+    metaPassos = (d['passos_meta'] as num?)?.toInt() ?? 10000;
+    passosHoje.value = passos[chaveData(DateTime.now())] ?? 0;
     lib = [
       ..._base.map(_comOverEx),
       ..._lista(d['custom'])
@@ -621,6 +642,8 @@ class AppState extends ChangeNotifier {
     await _p.setString(_k('perfil'), m['perfil'] as String);
     await _p.setString(_k('diario'), m['diario'] as String);
     await _p.setString(_k('cardapio'), m['cardapio'] as String);
+    await _p.setString(_k('passos'), m['passos'] as String);
+    await _p.setInt(_k('passos_meta'), metaPassos);
   }
 
   // ---------- Nuvem ----------
@@ -1098,6 +1121,80 @@ class AppState extends ChangeNotifier {
         obj: (perfil['obj'] as num?)?.toInt() ?? 1,
         manual: (perfil['kcal_manual'] as num?)?.toDouble(),
       );
+
+  // ---------- Passos (sensor do celular) ----------
+  Future<void> iniciarPassos({bool pedir = false}) async {
+    try {
+      var st = await Permission.activityRecognition.status;
+      if (!st.isGranted && pedir) {
+        st = await Permission.activityRecognition.request();
+      }
+      if (!st.isGranted) {
+        passosAtivo = false;
+        notifyListeners();
+        return;
+      }
+      await _subPassos?.cancel();
+      _subPassos = Pedometer.stepCountStream.listen(
+        _aoPasso,
+        onError: (Object e) {
+          erroPassos = 'Sensor de passos indisponível neste celular.';
+          passosAtivo = false;
+          notifyListeners();
+        },
+        cancelOnError: false,
+      );
+      passosAtivo = true;
+      erroPassos = null;
+      notifyListeners();
+    } catch (e) {
+      erroPassos = '$e';
+      passosAtivo = false;
+      notifyListeners();
+    }
+  }
+
+  void _aoPasso(StepCount e) {
+    final total = e.steps;
+    _ultimoTotal ??= _p.getInt('passos_last');
+    final k = chaveData(DateTime.now());
+    var delta = 0;
+    if (_ultimoTotal != null) {
+      delta = total >= _ultimoTotal! ? total - _ultimoTotal! : total;
+    }
+    _ultimoTotal = total;
+    if (delta > 0) passos[k] = (passos[k] ?? 0) + delta;
+    passosHoje.value = passos[k] ?? 0;
+    _timerPassos?.cancel();
+    _timerPassos = Timer(const Duration(seconds: 30), _salvarPassos);
+  }
+
+  Future<void> _salvarPassos() async {
+    if (_ultimoTotal != null) await _p.setInt('passos_last', _ultimoTotal!);
+    await _p.setString(_k('passos'), jsonEncode(passos));
+    _agendarEnvio();
+  }
+
+  Future<void> setMetaPassos(int v) async {
+    metaPassos = v;
+    await _p.setInt(_k('passos_meta'), v);
+    notifyListeners();
+  }
+
+  Map<String, dynamic>? get academia {
+    final a = perfil['academia'];
+    return a is Map ? Map<String, dynamic>.from(a) : null;
+  }
+
+  Future<void> salvarAcademia(Map<String, dynamic>? a) async {
+    final p = Map<String, dynamic>.from(perfil);
+    if (a == null) {
+      p.remove('academia');
+    } else {
+      p['academia'] = a;
+    }
+    await salvarPerfil(p);
+  }
 
   /// Calorias gastas no dia pelos treinos/cardios registrados (estimativa).
   double kcalGastas(DateTime d) {

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'state.dart';
 import 'telas.dart';
 import 'edicao.dart';
+import 'passos.dart';
 
 // ---------- Utilidades ----------
 String _d2(int n) => n.toString().padLeft(2, '0');
@@ -699,7 +700,29 @@ class MeuPlanoTela extends StatelessWidget {
                       children: [
                         Expanded(child: _infoChip(Icons.fitness_center, '$frequencia Treinos', 'Por semana')),
                         const SizedBox(width: 10),
-                        Expanded(child: _infoChip(Icons.location_on_outlined, 'Academia', 'Local')),
+                        Expanded(
+                          child: ListenableBuilder(
+                            listenable: app,
+                            builder: (context, _) {
+                              final nome = app.academia?['nome'] as String?;
+                              final curto = nome == null
+                                  ? 'Academia'
+                                  : (nome.length > 14
+                                      ? '${nome.substring(0, 13)}…'
+                                      : nome);
+                              return GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const AcademiaTela()),
+                                ),
+                                child: _infoChip(Icons.location_on_outlined,
+                                    curto,
+                                    nome == null ? 'Toque para escolher' : 'Minha academia'),
+                              );
+                            },
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 10),
