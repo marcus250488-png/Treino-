@@ -98,17 +98,20 @@ class Dia {
   final String nome;
   final int weekday;
   String foco;
+  String? imagem; // null = automática
   final List<Item> itens;
   Dia({
     required this.nome,
     required this.weekday,
     this.foco = '',
+    this.imagem,
     required this.itens,
   });
   factory Dia.fromJson(Map<String, dynamic> j) => Dia(
         nome: j['nome'] as String,
         weekday: j['weekday'] as int,
         foco: (j['foco'] ?? '') as String,
+        imagem: j['imagem'] as String?,
         itens: (j['itens'] as List)
             .map((e) => Item.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList(),
@@ -117,6 +120,7 @@ class Dia {
         'nome': nome,
         'weekday': weekday,
         'foco': foco,
+        'imagem': imagem,
         'itens': itens.map((e) => e.toJson()).toList(),
       };
 }
@@ -127,6 +131,9 @@ class Sessao {
   final double volume;
   final bool completo;
   final bool livre;
+  final String? tipo, modalidade; // tipo 'cardio' para sessões de cardio
+  final double? km;
+  final int? kcal, fc;
   Sessao({
     required this.data,
     required this.dia,
@@ -136,7 +143,23 @@ class Sessao {
     required this.volume,
     required this.completo,
     this.livre = false,
+    this.tipo,
+    this.modalidade,
+    this.km,
+    this.kcal,
+    this.fc,
   });
+  bool get cardio => tipo == 'cardio';
+  String get resumoCardio {
+    final partes = <String>['${(seg / 60).round()} min'];
+    if (km != null && km! > 0) {
+      partes.add('${km!.toStringAsFixed(2).replaceAll('.', ',')} km');
+    }
+    if (kcal != null) partes.add('$kcal kcal');
+    if (fc != null && fc! > 0) partes.add('$fc bpm');
+    return partes.join(' • ');
+  }
+
   factory Sessao.fromJson(Map<String, dynamic> j) => Sessao(
         data: j['data'] as String,
         dia: j['dia'] as String,
@@ -146,6 +169,11 @@ class Sessao {
         volume: (j['volume'] as num).toDouble(),
         completo: j['completo'] as bool,
         livre: (j['livre'] ?? false) as bool,
+        tipo: j['tipo'] as String?,
+        modalidade: j['modalidade'] as String?,
+        km: (j['km'] as num?)?.toDouble(),
+        kcal: (j['kcal'] as num?)?.toInt(),
+        fc: (j['fc'] as num?)?.toInt(),
       );
   Map<String, dynamic> toJson() => {
         'data': data,
@@ -156,6 +184,11 @@ class Sessao {
         'volume': volume,
         'completo': completo,
         'livre': livre,
+        'tipo': tipo,
+        'modalidade': modalidade,
+        'km': km,
+        'kcal': kcal,
+        'fc': fc,
       };
 }
 
@@ -778,6 +811,17 @@ class AppState extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// Treinos/cardios concluídos em um dia (inclui treino livre e cardio).
+  List<Sessao> sessoesDoDia(DateTime d) {
+    final k = chaveData(d);
+    return sessoes.where((s) {
+      final dt = DateTime.tryParse(s.data);
+      return dt != null && s.completo && chaveData(dt) == k;
+    }).toList();
+  }
+
+  bool fezAtividade(DateTime d) => sessoesDoDia(d).isNotEmpty;
 
   Future<void> concluirDia(DateTime d) async {
     feitos.add(chaveData(d));

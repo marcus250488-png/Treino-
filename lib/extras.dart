@@ -173,7 +173,9 @@ class HistoricoTela extends StatelessWidget {
                                   style: const TextStyle(color: kMudo)),
                               const SizedBox(height: 4),
                               Text(
-                                  '${s.series} de ${s.seriesTotal} séries • ${fmtTempo(s.seg)} • ${s.volume.round()} kg',
+                                  s.cardio
+                                      ? s.resumoCardio
+                                      : '${s.series} de ${s.seriesTotal} séries • ${fmtTempo(s.seg)} • ${s.volume.round()} kg',
                                   style: const TextStyle(color: kMudo)),
                             ],
                           ),

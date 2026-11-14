@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'state.dart';
 import 'telas.dart';
+import 'fotos.dart';
+import 'cardio.dart';
 
 const _nomesDiaSemana = {
   1: 'Segunda-feira',
@@ -261,7 +263,34 @@ class _EditarDiaEstado extends State<EditarDiaTela> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+          const Text('Imagem de fundo do dia',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Automática'),
+                selected: dia.imagem == null,
+                onSelected: (_) {
+                  dia.imagem = null;
+                  _mudou();
+                },
+              ),
+              for (final f in fotosDisponiveis)
+                ChoiceChip(
+                  label: Text(f.rotulo),
+                  selected: dia.imagem == f.chave,
+                  onSelected: (_) {
+                    dia.imagem = f.chave;
+                    _mudou();
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
           const Text(
             'Segure e arraste ≡ para reordenar. Toque no nome para trocar o exercício.',
             style: TextStyle(color: kMudo, fontSize: 12),
@@ -431,8 +460,71 @@ class _TreinoLivreEstado extends State<TreinoLivreTela> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CardioTela()),
+            ),
+            child: Container(
+              height: 130,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: branco(.14)),
+                color: Colors.black,
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/fotos/cardio.jpg',
+                      fit: BoxFit.cover,
+                      alignment: const Alignment(0, -0.75),
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [Color(0xEE000000), Color(0x22000000)],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Cardio', style: titulo(36)),
+                              const Text(
+                                  'Esteira, bike, corrida, escada e mais',
+                                  style:
+                                      TextStyle(color: kMudo, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text('Musculação', style: titulo(26)),
+          const SizedBox(height: 4),
           const Text(
-            'Monte um treino na hora, fora do seu plano. Ele entra no histórico, mas não marca o treino do dia.',
+            'Monte um treino na hora, fora do seu plano. Ele entra no histórico e marca o dia na semana, mas não conta como treino do plano.',
             style: TextStyle(color: kMudo),
           ),
           const SizedBox(height: 14),

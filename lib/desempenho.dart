@@ -163,6 +163,7 @@ Stats calcular(Periodo p) {
   final ini = p.ini;
   final fim = p.fim;
   for (final s in app.sessoes) {
+    if (s.cardio) continue;
     final dt = dataSessao(s);
     if (dt == null) continue;
     if (dt.isBefore(ini) || !dt.isBefore(fim)) continue;
@@ -205,6 +206,7 @@ Recordes calcularRecordes() {
   final dias = <DateTime>{};
   final porDia = List<int>.filled(7, 0);
   for (final s in app.sessoes) {
+    if (s.cardio) continue;
     final dt = dataSessao(s);
     if (dt == null) continue;
     r.total += 1;
@@ -1590,9 +1592,15 @@ class _DetEstado extends State<DesempenhoDetalheTela> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('${s.series}/${s.seriesTotal} séries',
+                      Text(
+                          s.cardio
+                              ? 'Cardio'
+                              : '${s.series}/${s.seriesTotal} séries',
                           style: const TextStyle(fontSize: 13)),
-                      Text('${fmtTempo(s.seg)} · ${_milhar(s.volume)} kg',
+                      Text(
+                          s.cardio
+                              ? s.resumoCardio
+                              : '${fmtTempo(s.seg)} · ${_milhar(s.volume)} kg',
                           style: const TextStyle(color: kMudo, fontSize: 12)),
                     ],
                   ),

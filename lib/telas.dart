@@ -8,6 +8,8 @@ import 'package:syncfusion_flutter_pdf/pdf.dart'
 import 'state.dart';
 import 'extras.dart' show MeuPlanoTela, fmtNum;
 import 'edicao.dart';
+import 'fotos.dart';
+import 'cardio.dart';
 import 'desempenho.dart' show DesempenhoTela;
 
 const kAzul = Color(0xFF0050E6);
@@ -434,7 +436,7 @@ class _InicioEstado extends State<InicioTela> {
                                       fontSize: 16)),
                               SizedBox(height: 3),
                               Text(
-                                'Monte e faça um treino na hora, fora do plano',
+                                'Musculação ou cardio, fora do plano',
                                 style: TextStyle(color: kMudo, fontSize: 13),
                               ),
                             ],
@@ -558,7 +560,7 @@ class _InicioEstado extends State<InicioTela> {
   }
 
   Widget _diaBtn(int i, DateTime d, DateTime hoje) {
-    final feito = app.feitos.contains(chaveData(d));
+    final feito = app.feitos.contains(chaveData(d)) || app.fezAtividade(d);
     final sel = i == _sel;
     final temTreino = app.treinoNo(d) != null;
     return Expanded(
@@ -667,6 +669,27 @@ class _InicioEstado extends State<InicioTela> {
             const SizedBox(height: 6),
             Text('Sem treino na ${_nomeDia(data)}.',
                 style: const TextStyle(color: kMudo)),
+            for (final f in app.sessoesDoDia(data))
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  f.cardio
+                      ? '${f.dia} • ${f.resumoCardio}'
+                      : '${f.dia} • ${(f.seg / 60).round()} min',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: kAzul),
+                ),
+              ),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(
+              style: estiloContorno,
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CardioTela()),
+              ),
+              icon: const Icon(Icons.directions_run),
+              label: const Text('Fazer cardio'),
+            ),
           ],
         ),
       );
@@ -677,59 +700,91 @@ class _InicioEstado extends State<InicioTela> {
     final min = (series * (40 + app.descanso) / 60).round();
     final kcal = (min * 6.5).round();
     final rotulo = feito ? 'Concluído' : (eHoje ? 'Treino do dia' : 'Programado');
+    final foto = fotoDoDia(dia);
+    final conteudo = Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: kAzul,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Text(rotulo),
+        ),
+        const SizedBox(height: 10),
+        Text(dia.nome, style: titulo(46), textAlign: TextAlign.center),
+        if (dia.foco.isNotEmpty)
+          Text(dia.foco,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: kMudo)),
+        const SizedBox(height: 14),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: grupos.take(4).map(_chip).toList(),
+        ),
+        const SizedBox(height: 14),
+        Text(
+            '${dia.itens.length} exercícios • $series séries • ~$min min • ~$kcal kcal',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: kMudo)),
+        const SizedBox(height: 14),
+        FilledButton(
+          style: estiloPrimario,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => TreinoTela(dia: dia)),
+          ),
+          child: Text(eHoje ? 'Iniciar treino' : 'Ver treino'),
+        ),
+      ],
+    );
     return Container(
-      padding: const EdgeInsets.all(20),
+      clipBehavior: Clip.antiAlias,
       decoration: _decCard,
       child: Stack(
         children: [
-          const Positioned(
-            top: 10,
-            left: 0,
-            right: 0,
-            child: Icon(Icons.fitness_center,
-                size: 150, color: Color.fromRGBO(0, 80, 230, .25)),
-          ),
+          if (foto != null) ...[
+            Positioned.fill(
+              child: Image.asset(
+                foto.asset,
+                fit: BoxFit.cover,
+                alignment: Alignment(foto.ax, foto.ay),
+                gaplessPlayback: true,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.30, 0.58, 1.0],
+                    colors: [
+                      Color(0x33000000),
+                      Color(0x00000000),
+                      Color(0xCC000000),
+                      Color(0xF5000000),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ] else
+            const Positioned(
+              top: 30,
+              left: 0,
+              right: 0,
+              child: Icon(Icons.fitness_center,
+                  size: 150, color: Color.fromRGBO(0, 80, 230, .25)),
+            ),
           Positioned.fill(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: kAzul,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Text(rotulo),
-                ),
-                const SizedBox(height: 10),
-                Text(dia.nome, style: titulo(46), textAlign: TextAlign.center),
-                if (dia.foco.isNotEmpty)
-                  Text(dia.foco,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: kMudo)),
-                const SizedBox(height: 14),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: grupos.take(4).map(_chip).toList(),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                    '${dia.itens.length} exercícios • $series séries • ~$min min • ~$kcal kcal',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: kMudo)),
-                const SizedBox(height: 14),
-                FilledButton(
-                  style: estiloPrimario,
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => TreinoTela(dia: dia)),
-                  ),
-                  child: Text(eHoje ? 'Iniciar treino' : 'Ver treino'),
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: conteudo,
             ),
           ),
         ],
