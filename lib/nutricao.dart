@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'state.dart';
 import 'telas.dart';
 import 'nutri_modelo.dart';
+import 'dart:async';
+import 'busca_alimentos.dart';
 
 double? _num(String s) => double.tryParse(s.trim().replaceAll(',', '.'));
 
@@ -10,6 +12,44 @@ const _corProt = Color(0xFF4C8DFF);
 const _corCarb = Color(0xFFFFB020);
 const _corGord = Color(0xFFFF4D7D);
 const _letras = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+
+/// Retângulo selecionável com borda fina (mesmo estilo dos cartões).
+class _Pill extends StatelessWidget {
+  final String texto;
+  final bool sel;
+  final bool expandir;
+  final VoidCallback onTap;
+  const _Pill(
+      {required this.texto,
+      required this.sel,
+      required this.onTap,
+      this.expandir = false});
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: EdgeInsets.symmetric(
+            vertical: 10, horizontal: expandir ? 2 : 14),
+        alignment: expandir ? Alignment.center : null,
+        decoration: BoxDecoration(
+          color: sel ? kAzul.withOpacity(0.30) : branco(.07),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: sel ? kAzul : branco(.14)),
+        ),
+        child: Text(
+          texto,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              fontSize: 13,
+              fontWeight: sel ? FontWeight.w700 : FontWeight.w500),
+        ),
+      ),
+    );
+  }
+}
 
 String _macrosTexto(Macros m) =>
     '${fmtD(m.kcal)} kcal • P ${fmtD(m.p)} • C ${fmtD(m.c)} • G ${fmtD(m.g)}';
@@ -890,16 +930,11 @@ class _QtdEstado extends State<_QtdDialog> {
             Wrap(
               spacing: 8,
               children: [
-                ChoiceChip(
-                  label: const Text('Gramas'),
-                  selected: !_un,
-                  onSelected: (_) => _alternar(false),
-                ),
-                ChoiceChip(
-                  label: Text(a.un),
-                  selected: _un,
-                  onSelected: (_) => _alternar(true),
-                ),
+                _Pill(
+                    texto: 'Gramas',
+                    sel: !_un,
+                    onTap: () => _alternar(false)),
+                _Pill(texto: a.un, sel: _un, onTap: () => _alternar(true)),
               ],
             ),
           TextField(
@@ -1086,6 +1121,11 @@ class AlimentoEditTela extends StatefulWidget {
 
 class _AlimEditEstado extends State<AlimentoEditTela> {
   late final TextEditingController _nome, _kcal, _p, _c, _g, _un, _ug;
+  final _busca = TextEditingController();
+  Timer? _deb;
+  bool _buscando = false;
+  String? _erroBusca;
+  List<ResultadoOnline> _res = [];
 
   @override
   void initState() {
@@ -1103,6 +1143,8 @@ class _AlimEditEstado extends State<AlimentoEditTela> {
 
   @override
   void dispose() {
+    _deb?.cancel();
+    _busca.dispose();
     for (final c in [_nome, _kcal, _p, _c, _g, _un, _ug]) {
       c.dispose();
     }
@@ -1115,6 +1157,7 @@ class _AlimEditEstado extends State<AlimentoEditTela> {
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
         controller: c,
+        onChanged: (_) => setState(() {}),
         keyboardType: numero
             ? const TextInputType.numberWithOptions(decimal: true)
             : TextInputType.text,
@@ -1127,6 +1170,157 @@ class _AlimEditEstado extends State<AlimentoEditTela> {
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
+        ),
+      ),
+    );
+  }
+
+  void _aoDigitarBusca(String v) {
+    _deb?.cancel();
+    final q = v.trim();
+    if (q.length < 3) {
+      setState(() {
+        _res = [];
+        _erroBusca = null;
+        _buscando = false;
+      });
+      return;
+    }
+    setState(() => _buscando = true);
+    _deb = Timer(const Duration(milliseconds: 700), () => _buscarOnline(q));
+  }
+
+  Future<void> _buscarOnline(String q) async {
+    try {
+      final r = await buscarAlimentosOnline(q);
+      if (!mounted || _busca.text.trim() != q) return;
+      setState(() {
+        _res = r;
+        _erroBusca = r.isEmpty ? 'Nenhum resultado para "$q".' : null;
+        _buscando = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _res = [];
+        _erroBusca = 'Não consegui buscar. Verifique a internet.';
+        _buscando = false;
+      });
+    }
+  }
+
+  void _usarResultado(ResultadoOnline r) {
+    setState(() {
+      _nome.text = r.marca.isEmpty ? r.nome : '${r.nome} (${r.marca})';
+      _kcal.text = fmtD(r.kcal, 1);
+      _p.text = fmtD(r.p, 1);
+      _c.text = fmtD(r.c, 1);
+      _g.text = fmtD(r.g, 1);
+      if (r.porcaoG != null) {
+        _un.text = 'porção';
+        _ug.text = fmtD(r.porcaoG!, 1);
+      }
+      _res = [];
+      _erroBusca = null;
+      _busca.clear();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Valores por 100 g preenchidos. Confira e salve.')));
+  }
+
+  Widget _buscaOnline() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _busca,
+          onChanged: _aoDigitarBusca,
+          decoration: InputDecoration(
+            hintText: 'Buscar na internet (ex.: iogurte grego)',
+            prefixIcon: const Icon(Icons.travel_explore),
+            suffixIcon: _buscando
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : null,
+            filled: true,
+            fillColor: branco(.08),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        if (_erroBusca != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, left: 8),
+            child: Text(_erroBusca!,
+                style: const TextStyle(color: kMudo, fontSize: 12)),
+          ),
+        for (final r in _res)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Material(
+              color: branco(.07),
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _usarResultado(r),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(r.nome,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      if (r.marca.isNotEmpty)
+                        Text(r.marca,
+                            style:
+                                const TextStyle(color: kMudo, fontSize: 12)),
+                      Text(
+                        '${fmtD(r.kcal)} kcal • P ${fmtD(r.p, 1)} • C ${fmtD(r.c, 1)} • G ${fmtD(r.g, 1)}  (100 g)',
+                        style: const TextStyle(color: kMudo, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 14),
+      ],
+    );
+  }
+
+  Widget _previaPorcao() {
+    final ug = _num(_ug.text) ?? 0;
+    final kcal = _num(_kcal.text);
+    if (ug <= 0 || kcal == null) return const SizedBox.shrink();
+    final f = ug / 100;
+    final un = _un.text.trim().isEmpty ? '1 unidade' : '1 ${_un.text.trim()}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Vidro(
+        padding: const EdgeInsets.all(14),
+        raio: 20,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Por porção: $un (${fmtD(ug, 1)} g)',
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(
+              '${fmtD(kcal * f)} kcal • P ${fmtD((_num(_p.text) ?? 0) * f, 1)} g • C ${fmtD((_num(_c.text) ?? 0) * f, 1)} g • G ${fmtD((_num(_g.text) ?? 0) * f, 1)} g',
+              style: const TextStyle(color: kMudo),
+            ),
+          ],
         ),
       ),
     );
@@ -1196,6 +1390,7 @@ class _AlimEditEstado extends State<AlimentoEditTela> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 40),
         children: [
+          if (widget.alimento == null) _buscaOnline(),
           _campo(_nome, 'Nome', numero: false),
           const Text('Valores por 100 g (ou 100 ml)',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -1218,6 +1413,7 @@ class _AlimEditEstado extends State<AlimentoEditTela> {
           const SizedBox(height: 8),
           _campo(_un, 'Nome da unidade (ex.: fatia, unidade)', numero: false),
           _campo(_ug, 'Peso de 1 unidade', sufixo: 'g'),
+          _previaPorcao(),
           const Text(
             'Ao salvar, todos os registros, receitas e cardápios que usam este alimento são recalculados automaticamente.',
             style: TextStyle(color: kMudo, fontSize: 12),
@@ -1288,14 +1484,20 @@ class _ReceitasEstado extends State<ReceitasTela> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 40),
             children: [
-              Wrap(
-                spacing: 8,
+              Row(
                 children: [
-                  for (final c in _cats)
-                    ChoiceChip(
-                      label: Text(c[1]),
-                      selected: _cat == c[0],
-                      onSelected: (_) => setState(() => _cat = c[0]),
+                  for (var i = 0; i < _cats.length; i++)
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                            right: i == _cats.length - 1 ? 0 : 6),
+                        child: _Pill(
+                          texto: _cats[i][1],
+                          sel: _cat == _cats[i][0],
+                          expandir: true,
+                          onTap: () => setState(() => _cat = _cats[i][0]),
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -1483,10 +1685,10 @@ class _ReceitaDetalheEstado extends State<ReceitaDetalheTela> {
               runSpacing: 8,
               children: [
                 for (final rf in kRefeicoes)
-                  ChoiceChip(
-                    label: Text(rf.nome),
-                    selected: _ref == rf.id,
-                    onSelected: (_) => setState(() => _ref = rf.id),
+                  _Pill(
+                    texto: rf.nome,
+                    sel: _ref == rf.id,
+                    onTap: () => setState(() => _ref = rf.id),
                   ),
               ],
             ),
@@ -1774,18 +1976,24 @@ class _PerfilEstado extends State<PerfilTela> {
           const SizedBox(height: 14),
           const Text('Sexo', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
+          Row(
             children: [
-              ChoiceChip(
-                label: const Text('Masculino'),
-                selected: _sexo == 'm',
-                onSelected: (_) => setState(() => _sexo = 'm'),
+              Expanded(
+                child: _Pill(
+                  texto: 'Masculino',
+                  sel: _sexo == 'm',
+                  expandir: true,
+                  onTap: () => setState(() => _sexo = 'm'),
+                ),
               ),
-              ChoiceChip(
-                label: const Text('Feminino'),
-                selected: _sexo == 'f',
-                onSelected: (_) => setState(() => _sexo = 'f'),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _Pill(
+                  texto: 'Feminino',
+                  sel: _sexo == 'f',
+                  expandir: true,
+                  onTap: () => setState(() => _sexo = 'f'),
+                ),
               ),
             ],
           ),
@@ -1827,14 +2035,20 @@ class _PerfilEstado extends State<PerfilTela> {
           const SizedBox(height: 10),
           const Text('Objetivo', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
+          Row(
             children: [
               for (var i = 0; i < _objTxt.length; i++)
-                ChoiceChip(
-                  label: Text(_objTxt[i]),
-                  selected: _obj == i,
-                  onSelected: (_) => setState(() => _obj = i),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                        right: i == _objTxt.length - 1 ? 0 : 8),
+                    child: _Pill(
+                      texto: _objTxt[i],
+                      sel: _obj == i,
+                      expandir: true,
+                      onTap: () => setState(() => _obj = i),
+                    ),
+                  ),
                 ),
             ],
           ),

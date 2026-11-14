@@ -24,6 +24,14 @@ class TreinoApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.dark,
         pageTransitionsTheme: kTransicoes,
+        chipTheme: ChipThemeData(
+          side: BorderSide(color: branco(.14)),
+          backgroundColor: branco(.07),
+          selectedColor: kAzul.withOpacity(0.30),
+          checkmarkColor: Colors.white,
+          labelStyle: const TextStyle(fontSize: 13, color: Colors.white),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
         scaffoldBackgroundColor: Colors.transparent,
         colorScheme: const ColorScheme.dark(primary: kAzul, surface: kSuperf),
         appBarTheme: const AppBarTheme(
