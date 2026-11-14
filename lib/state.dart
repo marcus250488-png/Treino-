@@ -1081,6 +1081,14 @@ class AppState extends ChangeNotifier {
         kcal * sp[2] / 9);
   }
 
+  /// Conta feminina: pelo sexo do perfil (ou pelo e-mail enquanto o perfil não existe).
+  bool get fotosFemininas {
+    final sx = perfil['sexo'];
+    if (sx == 'f') return true;
+    if (sx == 'm') return false;
+    return (email ?? '').toLowerCase() == 'juliagalves102@gmail.com';
+  }
+
   Metas? get metas => calcularMetas(
         sexo: perfil['sexo'] as String?,
         nasc: DateTime.tryParse('${perfil['nasc'] ?? ''}'),

@@ -89,3 +89,14 @@ FotoDia? fotoDoDia(Dia d) {
   }
   return fotoPorChave(melhor);
 }
+
+/// Fotos femininas existentes (peito, pernas, ombros, costas). As demais usam a padrão.
+const _chavesFemininas = {'peito', 'pernas', 'ombros', 'costas'};
+
+/// Escolhe a imagem conforme a conta: perfil feminino usa as fotos "f_".
+String fotoAsset(FotoDia f) {
+  if (app.fotosFemininas && _chavesFemininas.contains(f.chave)) {
+    return 'assets/fotos/f_${f.chave}.jpg';
+  }
+  return f.asset;
+}

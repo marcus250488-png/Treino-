@@ -787,7 +787,7 @@ class _InicioEstado extends State<InicioTela> {
           if (foto != null) ...[
             Positioned.fill(
               child: Image.asset(
-                foto.asset,
+                fotoAsset(foto),
                 fit: BoxFit.cover,
                 alignment: Alignment(foto.ax, foto.ay),
                 gaplessPlayback: true,
