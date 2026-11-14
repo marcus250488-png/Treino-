@@ -5,6 +5,7 @@ import 'evolucao.dart';
 import 'state.dart';
 import 'telas.dart';
 import 'transicao.dart';
+import 'nutricao.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,6 +99,7 @@ class _ShellEstado extends State<Shell> {
                 InicioTela(irPara: _ir),
                 const EvolucaoTela(),
                 const BibliotecaTela(),
+                const NutricaoTela(),
                 MaisTela(irPara: _ir),
               ],
             ),
@@ -117,7 +119,8 @@ class _ShellEstado extends State<Shell> {
                       _btn(0, Icons.home_rounded, 'Início'),
                       _btn(1, Icons.show_chart, 'Evolução'),
                       _btn(2, Icons.fitness_center, 'Biblioteca'),
-                      _btn(3, Icons.more_horiz, 'Mais'),
+                      _btn(3, Icons.restaurant_menu, 'Nutrição'),
+                      _btn(4, Icons.more_horiz, 'Mais'),
                     ],
                   ),
                 ),

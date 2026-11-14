@@ -604,19 +604,6 @@ class _DesempenhoEstado extends State<DesempenhoTela> {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: kAzul, width: 1.5),
-                    shape: const StadiumBorder(),
-                  ),
-                  onPressed: () {},
-                  child: const Text('Conhecer o treino livre'),
-                ),
-              ),
-              const SizedBox(height: 16),
               Vidro(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

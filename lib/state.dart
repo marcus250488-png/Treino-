@@ -8,6 +8,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_config.dart';
+import 'nutri_modelo.dart';
 
 String norm(String s) {
   const from = 'áàâãäéèêëíìîïóòôõöúùûüçñ';
@@ -336,6 +337,16 @@ class AppState extends ChangeNotifier {
   int descanso = 75;
   late SharedPreferences _p;
 
+  // Nutrição
+  List<Alimento> _alimBase = [];
+  List<Alimento> alimentos = [];
+  List<Receita> receitas = [];
+  Map<String, dynamic> alimOver = {};
+  Map<String, dynamic> exOver = {};
+  Map<String, dynamic> perfil = {};
+  Map<String, dynamic> diario = {}; // dia -> refeição -> [entradas]
+  Map<String, dynamic> cardapio = {}; // refeição -> [entradas]
+
   // Conta Google + nuvem (Firebase). Cada conta tem seus próprios dados.
   final GoogleSignIn _g =
       GoogleSignIn(scopes: ['email'], serverClientId: kWebClientId);
@@ -441,6 +452,14 @@ class AppState extends ChangeNotifier {
     _base = base
         .map((e) => Exercicio.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
+    final nu = jsonDecode(await rootBundle.loadString('assets/nutricao.json'))
+        as Map<String, dynamic>;
+    _alimBase = (nu['alimentos'] as List)
+        .map((e) => Alimento.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+    receitas = (nu['receitas'] as List)
+        .map((e) => Receita.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
     try {
       await Firebase.initializeApp(options: kFirebaseOptions);
       nuvemOk = true;
@@ -486,6 +505,12 @@ class AppState extends ChangeNotifier {
         'agua': _p.getString(_k('agua')),
         'obs': _p.getString(_k('obs')),
         'cargas': _p.getString(_k('cargas')),
+        'ex_over': _p.getString(_k('ex_over')),
+        'alim_over': _p.getString(_k('alim_over')),
+        'alim_custom': _p.getString(_k('alim_custom')),
+        'perfil': _p.getString(_k('perfil')),
+        'diario': _p.getString(_k('diario')),
+        'cardapio': _p.getString(_k('cardapio')),
       };
 
   Map<String, dynamic> _empacotar() => {
@@ -502,6 +527,13 @@ class AppState extends ChangeNotifier {
         'agua': jsonEncode(agua),
         'obs': jsonEncode(obs),
         'cargas': jsonEncode(cargas),
+        'ex_over': jsonEncode(exOver),
+        'alim_over': jsonEncode(alimOver),
+        'alim_custom': jsonEncode(
+            alimentos.where((a) => a.custom).map((a) => a.toJson()).toList()),
+        'perfil': jsonEncode(perfil),
+        'diario': jsonEncode(diario),
+        'cardapio': jsonEncode(cardapio),
         'atualizado_em': DateTime.now().toIso8601String(),
       };
 
@@ -517,10 +549,20 @@ class AppState extends ChangeNotifier {
     plano = _lista(d['plano'])
         .map((e) => Dia.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
+    exOver = Map<String, dynamic>.from(_mapa(d['ex_over']));
+    alimOver = Map<String, dynamic>.from(_mapa(d['alim_over']));
+    perfil = Map<String, dynamic>.from(_mapa(d['perfil']));
+    diario = Map<String, dynamic>.from(_mapa(d['diario']));
+    cardapio = Map<String, dynamic>.from(_mapa(d['cardapio']));
     lib = [
-      ..._base,
+      ..._base.map(_comOverEx),
       ..._lista(d['custom'])
           .map((e) => Exercicio.fromJson(Map<String, dynamic>.from(e as Map))),
+    ];
+    alimentos = [
+      ..._alimBase.map(_comOverAlim),
+      ..._lista(d['alim_custom'])
+          .map((e) => Alimento.fromJson(Map<String, dynamic>.from(e as Map))),
     ];
     feitos = ((d['feitos'] as List?) ?? const []).map((e) => '$e').toSet();
     final ini = d['inicio_plano'];
@@ -573,6 +615,12 @@ class AppState extends ChangeNotifier {
     await _p.setString(_k('agua'), m['agua'] as String);
     await _p.setString(_k('obs'), m['obs'] as String);
     await _p.setString(_k('cargas'), m['cargas'] as String);
+    await _p.setString(_k('ex_over'), m['ex_over'] as String);
+    await _p.setString(_k('alim_over'), m['alim_over'] as String);
+    await _p.setString(_k('alim_custom'), m['alim_custom'] as String);
+    await _p.setString(_k('perfil'), m['perfil'] as String);
+    await _p.setString(_k('diario'), m['diario'] as String);
+    await _p.setString(_k('cardapio'), m['cardapio'] as String);
   }
 
   // ---------- Nuvem ----------
@@ -641,7 +689,8 @@ class AppState extends ChangeNotifier {
     final jaMigrou = _p.getBool('legado_migrado') ?? false;
     const chaves = [
       'plano', 'custom', 'feitos', 'inicio_plano', 'descanso', 'meta_agua',
-      'meta_peso', 'sessoes', 'avaliacoes', 'agua', 'obs', 'cargas'
+      'meta_peso', 'sessoes', 'avaliacoes', 'agua', 'obs', 'cargas',
+      'ex_over', 'alim_over', 'alim_custom', 'perfil', 'diario', 'cardapio'
     ];
     final temLegado = _p.getString('plano') != null ||
         _p.getString('sessoes') != null ||
@@ -683,7 +732,7 @@ class AppState extends ChangeNotifier {
       feitos = ((m['dias_concluidos'] as List?) ?? const [])
           .map((e) => '$e')
           .toSet();
-      lib = [..._base, ...lib.where((e) => e.custom)];
+      lib = [..._base.map(_comOverEx), ...lib.where((e) => e.custom)];
       for (final d in plano) {
         for (final it in d.itens) {
           if (it.exId.isNotEmpty && ex(it.exId) == null) {
@@ -692,6 +741,27 @@ class AppState extends ChangeNotifier {
           }
         }
       }
+      if (m['perfil'] is Map) {
+        perfil = Map<String, dynamic>.from(m['perfil'] as Map);
+      }
+      if (m['diario'] is Map) {
+        diario = Map<String, dynamic>.from(m['diario'] as Map);
+      }
+      if (m['cardapio'] is Map) {
+        cardapio = Map<String, dynamic>.from(m['cardapio'] as Map);
+      }
+      if (m['alimentos_editados'] is Map) {
+        alimOver = Map<String, dynamic>.from(m['alimentos_editados'] as Map);
+      }
+      if (m['exercicios_editados'] is Map) {
+        exOver = Map<String, dynamic>.from(m['exercicios_editados'] as Map);
+        lib = [..._base.map(_comOverEx), ...lib.where((e) => e.custom)];
+      }
+      alimentos = [
+        ..._alimBase.map(_comOverAlim),
+        ...((m['alimentos_proprios'] as List?) ?? const []).map((e) =>
+            Alimento.fromJson(Map<String, dynamic>.from(e as Map))),
+      ];
       inicioPlano = null;
       final datas = feitos.map(dataDaChave).whereType<DateTime>().toList();
       if (datas.isNotEmpty) datas.sort();
@@ -705,6 +775,329 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       return 'Texto inválido: $e';
     }
+  }
+
+  // ---------- Edições de exercícios ----------
+  Exercicio _comOverEx(Exercicio e) {
+    final o = exOver[e.id];
+    if (o is Map) {
+      return Exercicio.fromJson(
+          {...Map<String, dynamic>.from(o), 'id': e.id, 'custom': false});
+    }
+    return e;
+  }
+
+  Future<void> editarExercicio(Exercicio e,
+      {required String nome,
+      required String grupo,
+      required String equip,
+      required List<String> apelidos}) async {
+    final novo = Exercicio(
+        id: e.id,
+        nome: nome,
+        grupo: grupo,
+        equip: equip,
+        apelidos: apelidos,
+        custom: e.custom);
+    final i = lib.indexWhere((x) => x.id == e.id);
+    if (i >= 0) lib[i] = novo;
+    if (!e.custom) exOver[e.id] = novo.toJson();
+    for (final d in plano) {
+      for (final it in d.itens) {
+        if (it.exId == e.id) {
+          it.nome = nome;
+          it.grupo = grupo;
+        }
+      }
+    }
+    await _p.setString(_k('ex_over'), jsonEncode(exOver));
+    await atualizarPlano();
+  }
+
+  Future<void> restaurarExercicio(String id) async {
+    exOver.remove(id);
+    final i = lib.indexWhere((x) => x.id == id);
+    final b = _base.where((x) => x.id == id).toList();
+    if (i >= 0 && b.isNotEmpty) {
+      lib[i] = b.first;
+      for (final d in plano) {
+        for (final it in d.itens) {
+          if (it.exId == id) {
+            it.nome = b.first.nome;
+            it.grupo = b.first.grupo;
+          }
+        }
+      }
+    }
+    await _p.setString(_k('ex_over'), jsonEncode(exOver));
+    await atualizarPlano();
+  }
+
+  Future<void> excluirExercicio(String id) async {
+    lib.removeWhere((x) => x.id == id && x.custom);
+    await atualizarPlano();
+  }
+
+  // ---------- Nutrição ----------
+  Alimento _comOverAlim(Alimento a) {
+    final o = alimOver[a.id];
+    if (o is Map) {
+      return Alimento.fromJson(
+          {...Map<String, dynamic>.from(o), 'id': a.id, 'custom': false});
+    }
+    return a;
+  }
+
+  Alimento? alimento(String id) {
+    for (final a in alimentos) {
+      if (a.id == id) return a;
+    }
+    return null;
+  }
+
+  Receita? receita(String id) {
+    for (final r in receitas) {
+      if (r.id == id) return r;
+    }
+    return null;
+  }
+
+  bool alimentoEditado(String id) => alimOver.containsKey(id);
+
+  Macros macrosReceita(Receita r) {
+    var t = const Macros();
+    for (final i in r.ing) {
+      final a = alimento(i.id);
+      if (a != null) t = t + a.porGramas(i.g);
+    }
+    return t;
+  }
+
+  Macros macrosEntrada(Map e) {
+    final q = (e['q'] as num).toDouble();
+    final id = e['id'] as String;
+    if (e['t'] == 'r') {
+      final r = receita(id);
+      return r == null ? const Macros() : macrosReceita(r) * q;
+    }
+    final a = alimento(id);
+    return a == null ? const Macros() : a.porGramas(q);
+  }
+
+  String nomeEntrada(Map e) {
+    final id = e['id'] as String;
+    if (e['t'] == 'r') return receita(id)?.nome ?? 'Receita removida';
+    return alimento(id)?.nome ?? 'Alimento removido';
+  }
+
+  String qtdEntrada(Map e) {
+    final q = (e['q'] as num).toDouble();
+    if (e['t'] == 'r') {
+      return '${fmtD(q, 1)} ${q == 1 ? 'porção' : 'porções'}';
+    }
+    final a = alimento(e['id'] as String);
+    var t = '${fmtD(q)} g';
+    if (a != null && a.ug > 0 && a.un.isNotEmpty) {
+      t += ' (≈ ${fmtD(q / a.ug, 1)} ${a.un})';
+    }
+    return t;
+  }
+
+  List<dynamic> _lerDia(String dia, String ref) {
+    final d = diario[dia];
+    if (d is! Map) return const [];
+    final l = d[ref];
+    return l is List ? l : const [];
+  }
+
+  List<dynamic> _listaDia(String dia, String ref) {
+    final d = (diario[dia] ??= <String, dynamic>{}) as Map;
+    return (d[ref] ??= <dynamic>[]) as List<dynamic>;
+  }
+
+  List<Map> entradasDe(String dia, String ref) =>
+      _lerDia(dia, ref).map((e) => e as Map).toList();
+
+  Macros totalRef(String dia, String ref) {
+    var t = const Macros();
+    for (final e in _lerDia(dia, ref)) {
+      t = t + macrosEntrada(e as Map);
+    }
+    return t;
+  }
+
+  Macros totalDia(String dia) {
+    var t = const Macros();
+    for (final r in kRefeicoes) {
+      t = t + totalRef(dia, r.id);
+    }
+    return t;
+  }
+
+  Future<void> _salvarNutri() async {
+    await _p.setString(_k('diario'), jsonEncode(diario));
+    await _p.setString(_k('cardapio'), jsonEncode(cardapio));
+    notifyListeners();
+  }
+
+  Future<void> addEntrada(String dia, String ref, Map<String, dynamic> e) async {
+    _listaDia(dia, ref).add(e);
+    await _salvarNutri();
+  }
+
+  Future<void> removerEntrada(String dia, String ref, int i) async {
+    final l = _listaDia(dia, ref);
+    if (i >= 0 && i < l.length) l.removeAt(i);
+    await _salvarNutri();
+  }
+
+  Future<void> setQtdEntrada(String dia, String ref, int i, double q) async {
+    final l = _listaDia(dia, ref);
+    if (i >= 0 && i < l.length) (l[i] as Map)['q'] = q;
+    await _salvarNutri();
+  }
+
+  List<dynamic> _listaCardapio(String ref) =>
+      (cardapio[ref] ??= <dynamic>[]) as List<dynamic>;
+
+  List<Map> entradasCardapio(String ref) {
+    final l = cardapio[ref];
+    return l is List ? l.map((e) => e as Map).toList() : <Map>[];
+  }
+
+  Macros totalCardapio(String ref) {
+    var t = const Macros();
+    for (final e in entradasCardapio(ref)) {
+      t = t + macrosEntrada(e);
+    }
+    return t;
+  }
+
+  Future<void> addCardapio(String ref, Map<String, dynamic> e) async {
+    _listaCardapio(ref).add(e);
+    await _salvarNutri();
+  }
+
+  Future<void> removerCardapio(String ref, int i) async {
+    final l = _listaCardapio(ref);
+    if (i >= 0 && i < l.length) l.removeAt(i);
+    await _salvarNutri();
+  }
+
+  Future<void> setQtdCardapio(String ref, int i, double q) async {
+    final l = _listaCardapio(ref);
+    if (i >= 0 && i < l.length) (l[i] as Map)['q'] = q;
+    await _salvarNutri();
+  }
+
+  Future<void> usarCardapio(String dia, String ref) async {
+    for (final e in entradasCardapio(ref)) {
+      _listaDia(dia, ref).add(Map<String, dynamic>.from(e));
+    }
+    await _salvarNutri();
+  }
+
+  Future<void> _salvarAlimentos() async {
+    await _p.setString(
+        _k('alim_custom'),
+        jsonEncode(
+            alimentos.where((a) => a.custom).map((a) => a.toJson()).toList()));
+    await _p.setString(_k('alim_over'), jsonEncode(alimOver));
+    notifyListeners();
+  }
+
+  Future<void> salvarAlimento(Alimento a) async {
+    final i = alimentos.indexWhere((x) => x.id == a.id);
+    if (i < 0) {
+      alimentos.add(a);
+    } else if (alimentos[i].custom) {
+      alimentos[i] = a;
+    } else {
+      alimOver[a.id] = a.toJson();
+      alimentos[i] = a;
+    }
+    await _salvarAlimentos();
+  }
+
+  Future<void> restaurarAlimento(String id) async {
+    alimOver.remove(id);
+    final i = alimentos.indexWhere((x) => x.id == id);
+    final b = _alimBase.where((x) => x.id == id).toList();
+    if (i >= 0 && b.isNotEmpty) alimentos[i] = b.first;
+    await _salvarAlimentos();
+  }
+
+  Future<void> excluirAlimento(String id) async {
+    alimentos.removeWhere((a) => a.id == id && a.custom);
+    await _salvarAlimentos();
+  }
+
+  Future<void> salvarPerfil(Map<String, dynamic> p) async {
+    perfil = p;
+    await _p.setString(_k('perfil'), jsonEncode(perfil));
+    notifyListeners();
+  }
+
+  double? get pesoAtual {
+    for (final a in avaliacoes.reversed) {
+      final p = a.v['peso'];
+      if (p != null && p > 0) return p;
+    }
+    return (perfil['peso'] as num?)?.toDouble();
+  }
+
+  double? get alturaAtual {
+    final h = (perfil['altura'] as num?)?.toDouble();
+    if (h != null && h > 0) return h;
+    for (final a in avaliacoes.reversed) {
+      final p = a.v['altura'];
+      if (p != null && p > 0) return p;
+    }
+    return null;
+  }
+
+  Metas? calcularMetas(
+      {required String? sexo,
+      required DateTime? nasc,
+      required double? altura,
+      required double? peso,
+      required int ativ,
+      required int obj,
+      double? manual}) {
+    if (sexo == null || nasc == null || altura == null || peso == null) {
+      return null;
+    }
+    final h = DateTime.now();
+    var idade = h.year - nasc.year;
+    if (h.month < nasc.month || (h.month == nasc.month && h.day < nasc.day)) {
+      idade--;
+    }
+    final tmb = 10 * peso + 6.25 * altura - 5 * idade + (sexo == 'm' ? 5 : -161);
+    final gasto = tmb * kFatoresAtividade[ativ.clamp(0, 4)];
+    var kcal = gasto * kAjusteObjetivo[obj.clamp(0, 2)];
+    if (manual != null && manual > 0) kcal = manual;
+    final sp = kDivisaoMacros[obj.clamp(0, 2)];
+    return Metas(tmb, gasto, kcal, kcal * sp[0] / 4, kcal * sp[1] / 4,
+        kcal * sp[2] / 9);
+  }
+
+  Metas? get metas => calcularMetas(
+        sexo: perfil['sexo'] as String?,
+        nasc: DateTime.tryParse('${perfil['nasc'] ?? ''}'),
+        altura: alturaAtual,
+        peso: pesoAtual,
+        ativ: (perfil['ativ'] as num?)?.toInt() ?? 2,
+        obj: (perfil['obj'] as num?)?.toInt() ?? 1,
+        manual: (perfil['kcal_manual'] as num?)?.toDouble(),
+      );
+
+  /// Calorias gastas no dia pelos treinos/cardios registrados (estimativa).
+  double kcalGastas(DateTime d) {
+    var t = 0.0;
+    for (final s in sessoesDoDia(d)) {
+      t += s.kcal != null ? s.kcal!.toDouble() : s.seg / 60 * 6.5;
+    }
+    return t;
   }
 
   Exercicio? ex(String id) {
@@ -892,6 +1285,13 @@ class AppState extends ChangeNotifier {
         'cargas': cargas,
         'observacoes': obs,
         'dias_concluidos': feitos.toList(),
+        'perfil': perfil,
+        'diario': diario,
+        'cardapio': cardapio,
+        'alimentos_proprios':
+            alimentos.where((a) => a.custom).map((a) => a.toJson()).toList(),
+        'alimentos_editados': alimOver,
+        'exercicios_editados': exOver,
       });
 
   Future<void> setCarga(String id, String v) async {

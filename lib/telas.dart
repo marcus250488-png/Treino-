@@ -10,6 +10,7 @@ import 'extras.dart' show MeuPlanoTela, fmtNum;
 import 'edicao.dart';
 import 'fotos.dart';
 import 'cardio.dart';
+import 'ex_edit.dart';
 import 'desempenho.dart' show DesempenhoTela;
 
 const kAzul = Color(0xFF0050E6);
@@ -651,6 +652,39 @@ class _InicioEstado extends State<InicioTela> {
         ),
       );
 
+  Widget _conteudoDescanso(BuildContext context, DateTime data) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Text('Descanso', style: titulo(46)),
+        const SizedBox(height: 6),
+        Text('Sem treino na ${_nomeDia(data)}.',
+            style: const TextStyle(color: kMudo)),
+        for (final f in app.sessoesDoDia(data))
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              f.cardio
+                  ? '${f.dia} • ${f.resumoCardio}'
+                  : '${f.dia} • ${(f.seg / 60).round()} min',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: kAzul),
+            ),
+          ),
+        const SizedBox(height: 18),
+        OutlinedButton.icon(
+          style: estiloContorno,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CardioTela()),
+          ),
+          icon: const Icon(Icons.directions_run),
+          label: const Text('Fazer cardio'),
+        ),
+      ],
+    );
+  }
+
   Widget _hero(BuildContext context, DateTime data, DateTime hoje) {
     final eHoje = chaveData(data) == chaveData(hoje);
     final feito = app.feitos.contains(chaveData(data));
@@ -658,37 +692,41 @@ class _InicioEstado extends State<InicioTela> {
 
     if (dia == null) {
       return Container(
-        padding: const EdgeInsets.all(20),
+        clipBehavior: Clip.antiAlias,
         decoration: _decCard,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            const Icon(Icons.bedtime_outlined, size: 90, color: kMudo),
-            const SizedBox(height: 16),
-            Text('Descanso', style: titulo(46)),
-            const SizedBox(height: 6),
-            Text('Sem treino na ${_nomeDia(data)}.',
-                style: const TextStyle(color: kMudo)),
-            for (final f in app.sessoesDoDia(data))
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Text(
-                  f.cardio
-                      ? '${f.dia} • ${f.resumoCardio}'
-                      : '${f.dia} • ${(f.seg / 60).round()} min',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: kAzul),
+            Positioned.fill(
+              child: Image.asset(
+                'assets/fotos/descanso.jpg',
+                fit: BoxFit.cover,
+                alignment: const Alignment(0, -0.35),
+                gaplessPlayback: true,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.35, 0.65, 1.0],
+                    colors: [
+                      Color(0x33000000),
+                      Color(0x00000000),
+                      Color(0xCC000000),
+                      Color(0xF5000000),
+                    ],
+                  ),
                 ),
               ),
-            const SizedBox(height: 18),
-            OutlinedButton.icon(
-              style: estiloContorno,
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CardioTela()),
+            ),
+            Positioned.fill(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: _conteudoDescanso(context, data),
               ),
-              icon: const Icon(Icons.directions_run),
-              label: const Text('Fazer cardio'),
             ),
           ],
         ),
@@ -1525,9 +1563,21 @@ class _BibEstado extends State<BibliotecaTela> {
                                   : '${e.grupo} • ${e.equip}',
                               style: const TextStyle(color: kMudo),
                             ),
-                            trailing: e.custom
-                                ? const Icon(Icons.edit_note, color: kMudo)
-                                : null,
+                            trailing: IconButton(
+                              tooltip: 'Editar exercício',
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        ExercicioEditTela(exercicio: e)),
+                              ),
+                              icon: Icon(
+                                Icons.edit_note,
+                                color: (e.custom || app.exOver.containsKey(e.id))
+                                    ? kAzul
+                                    : kMudo,
+                              ),
+                            ),
                             onTap: () => widget.selecionar
                                 ? Navigator.pop(context, e)
                                 : _detalhe(e),
