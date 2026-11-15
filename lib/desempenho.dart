@@ -3,6 +3,7 @@ import 'corpo.dart';
 import 'extras.dart' show fmtTempo, fmtNum, fmtDataIso;
 import 'state.dart';
 import 'telas.dart';
+import 'avisos.dart';
 
 // ============================================================
 // Seu desempenho — dados, resumo semanal e tela completa
@@ -596,9 +597,8 @@ class _DesempenhoEstado extends State<DesempenhoTela> {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
-              IconButton(
-                  icon: const Icon(Icons.notifications_none), onPressed: () {}),
-              IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+              const BotaoSino(),
+              menuTresPontos(context),
             ],
           ),
           body: ListView(

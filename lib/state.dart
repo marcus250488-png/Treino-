@@ -348,6 +348,7 @@ class AppState extends ChangeNotifier {
   StreamSubscription<StepCount>? _subPassos;
   Timer? _timerPassos;
   int? _ultimoTotal; // total do sensor já contabilizado
+  bool _inicioAjustado = false;
 
   // Nutrição
   List<Alimento> _alimBase = [];
@@ -492,6 +493,10 @@ class AppState extends ChangeNotifier {
       _pre = 'u_${u}_';
     }
     _carregarLocal();
+    if (_inicioAjustado && inicioPlano != null) {
+      await _p.setString(_k('inicio_plano'), inicioPlano!.toIso8601String());
+      _inicioAjustado = false;
+    }
     unawaited(iniciarPassos());
     if (uid != null) {
       _g.signInSilently().then((c) {
@@ -603,6 +608,7 @@ class AppState extends ChangeNotifier {
         _mapa(d['obs']).map((k, v) => MapEntry('$k', '$v')));
     cargas = Map<String, String>.from(
         _mapa(d['cargas']).map((k, v) => MapEntry('$k', '$v')));
+    _ajustarInicioVazio();
     if (inicioPlano == null && (plano.isNotEmpty || feitos.isNotEmpty)) {
       final datas = feitos.map(dataDaChave).whereType<DateTime>().toList();
       if (datas.isNotEmpty) datas.sort();
@@ -1121,6 +1127,33 @@ class AppState extends ChangeNotifier {
         obj: (perfil['obj'] as num?)?.toInt() ?? 1,
         manual: (perfil['kcal_manual'] as num?)?.toDouble(),
       );
+
+  /// Se nada foi feito ainda, a jornada começa na segunda-feira "de verdade":
+  /// no domingo vale a segunda seguinte; de segunda a sábado, a segunda desta semana.
+  void _ajustarInicioVazio() {
+    if (inicioPlano == null ||
+        feitos.isNotEmpty ||
+        sessoes.isNotEmpty ||
+        plano.isEmpty) {
+      return;
+    }
+    final h = DateTime.now();
+    final hoje = DateTime(h.year, h.month, h.day);
+    final alvo = hoje.weekday == 7
+        ? hoje.add(const Duration(days: 1))
+        : hoje.subtract(Duration(days: hoje.weekday - 1));
+    if (inicioPlano!.isBefore(alvo)) {
+      inicioPlano = alvo;
+      _inicioAjustado = true;
+    }
+  }
+
+  Future<void> definirInicioPlano(DateTime d) async {
+    final dia = DateTime(d.year, d.month, d.day);
+    inicioPlano = dia.subtract(Duration(days: dia.weekday - 1));
+    await _p.setString(_k('inicio_plano'), inicioPlano!.toIso8601String());
+    notifyListeners();
+  }
 
   // ---------- Passos (sensor do celular) ----------
   Future<void> iniciarPassos({bool pedir = false}) async {

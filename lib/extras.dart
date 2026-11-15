@@ -856,7 +856,30 @@ class MeuPlanoTela extends StatelessWidget {
 
               // Semanas
               Text('Sua jornada', style: titulo(26)),
-              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Início: ${inicioJornada.day.toString().padLeft(2, '0')}/${inicioJornada.month.toString().padLeft(2, '0')} (segunda-feira)',
+                      style: const TextStyle(color: kMudo),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      final d = await showDatePicker(
+                        context: context,
+                        initialDate: inicioJornada,
+                        firstDate: DateTime(2024),
+                        lastDate: DateTime(2100),
+                        helpText: 'Escolha a data de início',
+                      );
+                      if (d != null) await app.definirInicioPlano(d);
+                    },
+                    child: const Text('Alterar início'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               for (var s = 1; s <= 5; s++) ...[
                 _semanaCard(context, s, s == semanaAtual, semanas[s - 1].clamp(0, 5)),
                 const SizedBox(height: 10),
