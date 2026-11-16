@@ -27,7 +27,8 @@ const _intensMult = [0.8, 1.0, 1.25];
 const _metas = <int?>[15, 20, 30, 45, 60, null];
 
 class CardioTela extends StatefulWidget {
-  const CardioTela({super.key});
+  final DateTime? dia; // dia em que o cardio será registrado (padrão: hoje)
+  const CardioTela({super.key, this.dia});
   @override
   State<CardioTela> createState() => _CardioEstado();
 }
@@ -171,8 +172,13 @@ class _CardioEstado extends State<CardioTela> {
     final fc = int.tryParse(_fc.text.trim());
     final nome = _mods[_mod].nome;
     final msg = ScaffoldMessenger.of(context);
+    final agora = DateTime.now();
+    final d = widget.dia;
+    final quando = d == null
+        ? agora
+        : DateTime(d.year, d.month, d.day, agora.hour, agora.minute, agora.second);
     await app.addSessao(Sessao(
-      data: DateTime.now().toIso8601String(),
+      data: quando.toIso8601String(),
       dia: 'Cardio • $nome',
       seg: seg,
       series: 0,

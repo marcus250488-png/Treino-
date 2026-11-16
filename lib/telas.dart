@@ -29,6 +29,15 @@ final estiloPrimario = FilledButton.styleFrom(
   shape: const StadiumBorder(),
   textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
 );
+/// Contorno bem fino e branco, igual à borda dos cartões.
+final estiloContornoFino = OutlinedButton.styleFrom(
+  foregroundColor: Colors.white,
+  side: BorderSide(color: Colors.white.withOpacity(0.35), width: 1),
+  shape: const StadiumBorder(),
+  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+  textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+);
+
 final estiloContorno = OutlinedButton.styleFrom(
   foregroundColor: Colors.white,
   minimumSize: const Size.fromHeight(56),
@@ -698,6 +707,35 @@ class _InicioEstado extends State<InicioTela> {
         ),
       );
 
+  Widget _linhaCardio(BuildContext context, DateTime data) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            style: estiloContornoFino,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CardioTela(dia: data)),
+            ),
+            icon: const Icon(Icons.directions_run, size: 18),
+            label: const FittedBox(
+                fit: BoxFit.scaleDown, child: Text('Fazer cardio')),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: OutlinedButton.icon(
+            style: estiloContornoFino,
+            onPressed: () => registrarCardioManual(context, data),
+            icon: const Icon(Icons.add, size: 18),
+            label: const FittedBox(
+                fit: BoxFit.scaleDown, child: Text('Já fiz cardio')),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _conteudoDescanso(BuildContext context, DateTime data) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -718,19 +756,7 @@ class _InicioEstado extends State<InicioTela> {
             ),
           ),
         const SizedBox(height: 18),
-        OutlinedButton.icon(
-          style: estiloContorno,
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CardioTela()),
-          ),
-          icon: const Icon(Icons.directions_run),
-          label: const Text('Fazer cardio'),
-        ),
-        TextButton(
-          onPressed: () => registrarCardioManual(context, data),
-          child: const Text('Já fiz cardio'),
-        ),
+        _linhaCardio(context, data),
       ],
     );
   }
@@ -811,8 +837,7 @@ class _InicioEstado extends State<InicioTela> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: kMudo)),
         const SizedBox(height: 14),
-        if (!feito)
-          Wrap(
+        Wrap(
             alignment: WrapAlignment.center,
             spacing: 8,
             runSpacing: 8,
@@ -841,33 +866,8 @@ class _InicioEstado extends State<InicioTela> {
           ),
           child: Text(eHoje ? 'Iniciar treino' : 'Ver treino'),
         ),
-        if (feito) ...[
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: estiloContorno,
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CardioTela()),
-                  ),
-                  icon: const Icon(Icons.directions_run),
-                  label: const Text('Fazer cardio'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: estiloContorno,
-                  onPressed: () => registrarCardioManual(context, data),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Já fiz cardio'),
-                ),
-              ),
-            ],
-          ),
-        ],
+        const SizedBox(height: 10),
+        _linhaCardio(context, data),
       ],
     );
     return Container(
@@ -913,7 +913,13 @@ class _InicioEstado extends State<InicioTela> {
           Positioned.fill(
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: conteudo,
+              child: LayoutBuilder(
+                builder: (context, cons) => FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.bottomCenter,
+                  child: SizedBox(width: cons.maxWidth, child: conteudo),
+                ),
+              ),
             ),
           ),
         ],
