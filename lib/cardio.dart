@@ -476,3 +476,138 @@ class _CardioEstado extends State<CardioTela> {
     );
   }
 }
+
+/// Registra um cardio que já foi feito (sem usar o cronômetro).
+Future<void> registrarCardioManual(BuildContext context, DateTime dia) async {
+  final r = await showDialog<Map<String, dynamic>>(
+    context: context,
+    builder: (_) => const _CardioManualDialog(),
+  );
+  if (r == null) return;
+  final agora = DateTime.now();
+  final quando = DateTime(dia.year, dia.month, dia.day, agora.hour, agora.minute);
+  final nome = _mods[r['mod'] as int].nome;
+  await app.addSessao(Sessao(
+    data: quando.toIso8601String(),
+    dia: 'Cardio • $nome',
+    seg: (r['min'] as int) * 60,
+    series: 0,
+    seriesTotal: 0,
+    volume: 0,
+    completo: true,
+    livre: true,
+    tipo: 'cardio',
+    modalidade: nome,
+    km: r['km'] as double?,
+    kcal: r['kcal'] as int,
+    fc: r['fc'] as int?,
+  ));
+  if (context.mounted) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Cardio registrado!')));
+  }
+}
+
+class _CardioManualDialog extends StatefulWidget {
+  const _CardioManualDialog();
+  @override
+  State<_CardioManualDialog> createState() => _CardioManualEstado();
+}
+
+class _CardioManualEstado extends State<_CardioManualDialog> {
+  int _mod = 0;
+  final _min = TextEditingController(text: '30');
+  final _km = TextEditingController();
+  final _fc = TextEditingController();
+
+  @override
+  void dispose() {
+    _min.dispose();
+    _km.dispose();
+    _fc.dispose();
+    super.dispose();
+  }
+
+  double get _peso {
+    for (final a in app.avaliacoes.reversed) {
+      final p = a.v['peso'];
+      if (p != null && p > 0) return p;
+    }
+    return 75;
+  }
+
+  int get _kcal {
+    final m = int.tryParse(_min.text.trim()) ?? 0;
+    return (_mods[_mod].met * _peso * m / 60).round();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Registrar cardio feito'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (var i = 0; i < _mods.length; i++)
+                  ChoiceChip(
+                    label: Text(_mods[i].nome),
+                    selected: _mod == i,
+                    onSelected: (_) => setState(() => _mod = i),
+                  ),
+              ],
+            ),
+            TextField(
+              controller: _min,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(labelText: 'Tempo (minutos)'),
+            ),
+            TextField(
+              controller: _km,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration:
+                  const InputDecoration(labelText: 'Distância (km) — opcional'),
+            ),
+            TextField(
+              controller: _fc,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                  labelText: 'Batimentos médios — opcional'),
+            ),
+            const SizedBox(height: 10),
+            Text('~$_kcal kcal (estimativa)',
+                style: const TextStyle(color: kMudo)),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar')),
+        TextButton(
+          onPressed: () {
+            final m = int.tryParse(_min.text.trim());
+            if (m == null || m <= 0) return;
+            final km = double.tryParse(_km.text.trim().replaceAll(',', '.'));
+            final fc = int.tryParse(_fc.text.trim());
+            Navigator.pop(context, {
+              'mod': _mod,
+              'min': m,
+              'km': (km != null && km > 0) ? km : null,
+              'fc': (fc != null && fc > 0) ? fc : null,
+              'kcal': _kcal,
+            });
+          },
+          child: const Text('Salvar'),
+        ),
+      ],
+    );
+  }
+}

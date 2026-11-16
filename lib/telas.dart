@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart'
     show PdfDocument, PdfTextExtractor;
 import 'state.dart';
-import 'extras.dart' show MeuPlanoTela, fmtNum;
+import 'extras.dart' show MeuPlanoTela, fmtNum, fmtTempo;
 import 'edicao.dart';
 import 'fotos.dart';
 import 'cardio.dart';
@@ -727,6 +727,10 @@ class _InicioEstado extends State<InicioTela> {
           icon: const Icon(Icons.directions_run),
           label: const Text('Fazer cardio'),
         ),
+        TextButton(
+          onPressed: () => registrarCardioManual(context, data),
+          child: const Text('Já fiz cardio'),
+        ),
       ],
     );
   }
@@ -781,8 +785,12 @@ class _InicioEstado extends State<InicioTela> {
 
     final grupos = dia.itens.map((e) => e.grupo).toSet().toList();
     final series = dia.itens.fold<int>(0, (s, e) => s + e.series);
-    final min = (series * (40 + app.descanso) / 60).round();
+    final ultima = app.ultimaSessaoDoDia(dia);
+    final min = ultima != null
+        ? (ultima.seg / 60).round().clamp(1, 600).toInt()
+        : (series * (40 + app.descanso) / 60).round();
     final kcal = (min * 6.5).round();
+    final dUlt = ultima == null ? null : DateTime.tryParse(ultima.data);
     final rotulo = feito ? 'Concluído' : (eHoje ? 'Treino do dia' : 'Programado');
     final foto = fotoDoDia(dia);
     final conteudo = Column(
@@ -803,17 +811,27 @@ class _InicioEstado extends State<InicioTela> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: kMudo)),
         const SizedBox(height: 14),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          runSpacing: 8,
-          children: grupos.take(4).map(_chip).toList(),
-        ),
+        if (!feito)
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: grupos.take(4).map(_chip).toList(),
+          ),
         const SizedBox(height: 14),
         Text(
-            '${dia.itens.length} exercícios • $series séries • ~$min min • ~$kcal kcal',
+            '${dia.itens.length} exercícios • $series séries • ${ultima != null ? '$min min' : '~$min min'} • ~$kcal kcal',
             textAlign: TextAlign.center,
             style: const TextStyle(color: kMudo)),
+        if (ultima != null && dUlt != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Último treino: ${dUlt.day.toString().padLeft(2, '0')}/${dUlt.month.toString().padLeft(2, '0')} • ${fmtTempo(ultima.seg)} • ${ultima.volume.round()} kg',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: kAzul, fontSize: 13),
+            ),
+          ),
         const SizedBox(height: 14),
         FilledButton(
           style: estiloPrimario,
@@ -823,6 +841,33 @@ class _InicioEstado extends State<InicioTela> {
           ),
           child: Text(eHoje ? 'Iniciar treino' : 'Ver treino'),
         ),
+        if (feito) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: estiloContorno,
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CardioTela()),
+                  ),
+                  icon: const Icon(Icons.directions_run),
+                  label: const Text('Fazer cardio'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: estiloContorno,
+                  onPressed: () => registrarCardioManual(context, data),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Já fiz cardio'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
     return Container(
@@ -1201,10 +1246,20 @@ class _RunEstado extends State<RunTela> {
       volume: volume,
       completo: !parcial,
       livre: widget.livre,
+      detalhes: [
+        for (final r in resumo)
+          {
+            'nome': r.nome,
+            'grupo': r.grupo,
+            'reps': r.reps,
+            'cargas': r.cargas,
+          },
+      ],
     ));
     if (!parcial && !widget.livre) await app.concluirDia(DateTime.now());
     if (!mounted) return;
-    await showDialog(
+    final nav = Navigator.of(context);
+    final acao = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (c) => AlertDialog(
@@ -1227,12 +1282,19 @@ class _RunEstado extends State<RunTela> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: const Text('OK'))
+          TextButton(
+              onPressed: () => Navigator.pop(c, 'cardio'),
+              child: const Text('Fazer cardio')),
+          TextButton(
+              onPressed: () => Navigator.pop(c, 'ok'),
+              child: const Text('OK')),
         ],
       ),
     );
-    if (!mounted) return;
-    Navigator.of(context).popUntil((r) => r.isFirst);
+    nav.popUntil((r) => r.isFirst);
+    if (acao == 'cardio') {
+      nav.push(MaterialPageRoute(builder: (_) => const CardioTela()));
+    }
   }
 
   Future<void> _encerrar() async {

@@ -135,6 +135,7 @@ class Sessao {
   final bool completo;
   final bool livre;
   final String? tipo, modalidade; // tipo 'cardio' para sessões de cardio
+  final List<Map<String, dynamic>>? detalhes; // exercícios e cargas do treino
   final double? km;
   final int? kcal, fc;
   Sessao({
@@ -151,6 +152,7 @@ class Sessao {
     this.km,
     this.kcal,
     this.fc,
+    this.detalhes,
   });
   bool get cardio => tipo == 'cardio';
   String get resumoCardio {
@@ -177,6 +179,9 @@ class Sessao {
         km: (j['km'] as num?)?.toDouble(),
         kcal: (j['kcal'] as num?)?.toInt(),
         fc: (j['fc'] as num?)?.toInt(),
+        detalhes: (j['detalhes'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList(),
       );
   Map<String, dynamic> toJson() => {
         'data': data,
@@ -192,6 +197,7 @@ class Sessao {
         'km': km,
         'kcal': kcal,
         'fc': fc,
+        'detalhes': detalhes,
       };
 }
 
@@ -1353,6 +1359,16 @@ class AppState extends ChangeNotifier {
   }
 
   bool fezAtividade(DateTime d) => sessoesDoDia(d).isNotEmpty;
+
+  /// Último treino completo feito desse dia do plano (para mostrar o tempo real).
+  Sessao? ultimaSessaoDoDia(Dia d) {
+    Sessao? r;
+    for (final s in sessoes) {
+      if (!s.completo || s.livre || s.cardio || s.dia != d.nome) continue;
+      if (r == null || s.data.compareTo(r.data) > 0) r = s;
+    }
+    return r;
+  }
 
   Future<void> concluirDia(DateTime d) async {
     feitos.add(chaveData(d));

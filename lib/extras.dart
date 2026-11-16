@@ -4,6 +4,7 @@ import 'state.dart';
 import 'telas.dart';
 import 'edicao.dart';
 import 'passos.dart';
+import 'sessao_detalhe.dart';
 
 // ---------- Utilidades ----------
 String _d2(int n) => n.toString().padLeft(2, '0');
@@ -163,6 +164,11 @@ class HistoricoTela extends StatelessWidget {
                   child: Vidro(
                     padding: const EdgeInsets.all(14),
                     raio: 22,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => SessaoDetalheTela(sessao: s)),
+                    ),
                     child: Row(
                       children: [
                         Expanded(
