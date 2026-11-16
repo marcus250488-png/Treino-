@@ -60,3 +60,6 @@ Esses módulos estão documentados no roadmap e dependem de decisões e serviço
 * Cartão de compartilhamento 9:16 (story / status), ao concluir o treino.
 * Dependências novas: share_plus e path_provider.
 * Resumo do treino no Histórico tem botão Compartilhar.
+
+--- v1.7.1 ---
+* Na lista do treino de hoje, "Excluir e finalizar treino" tira um exercício só da sessão de hoje (com confirmação) e salva o treino como completo, com os exercícios feitos. A rotina não muda.

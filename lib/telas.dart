@@ -1301,6 +1301,64 @@ void abrirImportar(BuildContext context, void Function(int) irPara) {
   );
 }
 
+/// Tira um exercício só da sessão de hoje e salva o treino de hoje como completo,
+/// com os exercícios feitos. A rotina do dia não muda.
+Future<void> finalizarTreinoSemExercicio(Dia dia, String nome) async {
+  final k = chaveData(DateTime.now());
+  final doDia = app.sessoes
+      .where((s) =>
+          !s.cardio &&
+          s.dia == dia.nome &&
+          chaveData(DateTime.tryParse(s.data) ?? DateTime(1970)) == k)
+      .toList();
+
+  var seg = 0;
+  var series = 0;
+  var volume = 0.0;
+  final det = <Map<String, dynamic>>[];
+  for (final s in doDia) {
+    seg += s.seg;
+    series += s.series;
+    volume += s.volume;
+    for (final m in s.detalhes ?? const <Map<String, dynamic>>[]) {
+      if (m['nome'] == nome) {
+        // Remove o volume e as séries deste exercício da sessão.
+        final cargas = ((m['cargas'] as List?) ?? const [])
+            .map((e) => (e as num).toDouble())
+            .toList();
+        series -= cargas.length;
+        volume -= cargas.fold<double>(0, (a, c) => a + c) *
+            repsMedio((m['reps'] ?? '') as String);
+      } else {
+        det.add(m);
+      }
+    }
+  }
+
+  // Séries planejadas de hoje, sem o exercício removido.
+  var total = 0;
+  for (final i in dia.itens) {
+    if ((app.ex(i.exId)?.nome ?? i.nome) != nome) total += i.series;
+  }
+
+  final sessao = Sessao(
+    data: DateTime.now().toIso8601String(),
+    dia: dia.nome,
+    seg: seg,
+    series: series < 0 ? 0 : series,
+    seriesTotal: total,
+    volume: volume < 0 ? 0 : volume,
+    completo: true,
+    livre: false,
+    detalhes: det,
+  );
+  for (final s in doDia) {
+    await app.excluirSessao(s);
+  }
+  await app.addSessao(sessao);
+  await app.concluirDia(DateTime.now());
+}
+
 void detalheExercicio(BuildContext context, Item it,
     {Dia? dia, int indice = 0}) {
   showModalBottomSheet(
@@ -1405,6 +1463,47 @@ class _DetalheExEstado extends State<_DetalheEx> {
                 icon: const Icon(Icons.play_arrow_rounded),
                 label: const Text('Começar daqui'),
               ),
+              if (widget.dia!.weekday == DateTime.now().weekday) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                    side: const BorderSide(color: Colors.redAccent),
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(26)),
+                  ),
+                  onPressed: () async {
+                    final nav = Navigator.of(context);
+                    final messenger = ScaffoldMessenger.of(context);
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (c) => AlertDialog(
+                        title: const Text('Excluir e finalizar treino?'),
+                        content: const Text(
+                            'Remover este exercício só de hoje e finalizar o treino?\n\nA rotina dos outros dias continua igual.'),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(c, false),
+                              child: const Text('Cancelar')),
+                          TextButton(
+                              onPressed: () => Navigator.pop(c, true),
+                              child: const Text('Confirmar')),
+                        ],
+                      ),
+                    );
+                    if (ok != true) return;
+                    final nome = app.ex(widget.it.exId)?.nome ?? widget.it.nome;
+                    await finalizarTreinoSemExercicio(widget.dia!, nome);
+                    if (!mounted) return;
+                    nav.pop();
+                    messenger.showSnackBar(const SnackBar(
+                        content: Text('Treino de hoje finalizado')));
+                  },
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Excluir e finalizar treino'),
+                ),
+              ],
             ],
           ],
         ),
