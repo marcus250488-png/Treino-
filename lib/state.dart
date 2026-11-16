@@ -6,7 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pedometer/pedometer.dart' show Pedometer, StepCount;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show MethodChannel, rootBundle;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_config.dart';
@@ -343,6 +343,8 @@ class AppState extends ChangeNotifier {
   int metaAgua = 2500;
   double? metaPeso;
   int descanso = 75;
+  bool manterTela = false; // não desligar a tela com o app aberto
+  bool aquecimento = false; // bloco de aquecimento no topo do treino
   late SharedPreferences _p;
 
   // Passos e academia
@@ -499,6 +501,8 @@ class AppState extends ChangeNotifier {
       _pre = 'u_${u}_';
     }
     _carregarLocal();
+    manterTela = _p.getBool(_k('manter_tela')) ?? false;
+    aquecimento = _p.getBool(_k('aquecimento')) ?? false;
     if (_inicioAjustado && inicioPlano != null) {
       await _p.setString(_k('inicio_plano'), inicioPlano!.toIso8601String());
       _inicioAjustado = false;
@@ -1447,6 +1451,89 @@ class AppState extends ChangeNotifier {
         'alimentos_editados': alimOver,
         'exercicios_editados': exOver,
       });
+
+  // ---------- Telas e aquecimento ----------
+  Future<void> setManterTela(bool v) async {
+    manterTela = v;
+    await _p.setBool(_k('manter_tela'), v);
+    await aplicarManterTela();
+    notifyListeners();
+  }
+
+  /// Envia a preferência ao Android (FLAG_KEEP_SCREEN_ON, ver MainActivity.kt).
+  Future<void> aplicarManterTela() async {
+    try {
+      await const MethodChannel('meutreino/tela')
+          .invokeMethod('manterTela', manterTela);
+    } catch (_) {
+      // Sem canal nativo (ex.: teste): segue sem travar a tela.
+    }
+  }
+
+  Future<void> setAquecimento(bool v) async {
+    aquecimento = v;
+    await _p.setBool(_k('aquecimento'), v);
+    notifyListeners();
+  }
+
+  // ---------- Histórico por exercício (pelo nome) ----------
+  List<double> _cargasDe(Map<String, dynamic> m) =>
+      ((m['cargas'] as List?) ?? const [])
+          .map((e) => (e as num).toDouble())
+          .toList();
+
+  /// Cargas (uma por série) da última vez que este exercício foi feito.
+  List<double>? ultimasCargas(String nome) {
+    Map<String, dynamic>? achado;
+    DateTime? quando;
+    for (final s in sessoes) {
+      final dt = DateTime.tryParse(s.data);
+      if (dt == null || s.detalhes == null) continue;
+      for (final m in s.detalhes!) {
+        if (m['nome'] == nome && (quando == null || dt.isAfter(quando))) {
+          achado = m;
+          quando = dt;
+        }
+      }
+    }
+    return achado == null ? null : _cargasDe(achado);
+  }
+
+  /// Maior carga já registrada para este exercício (null = nunca usou carga).
+  double? recorde(String nome) {
+    double? r;
+    for (final s in sessoes) {
+      for (final m in s.detalhes ?? const <Map<String, dynamic>>[]) {
+        if (m['nome'] != nome) continue;
+        for (final c in _cargasDe(m)) {
+          if (c > 0 && (r == null || c > r)) r = c;
+        }
+      }
+    }
+    return r;
+  }
+
+  /// Se na última vez todas as séries saíram com a mesma carga, sugere subir um passo.
+  double? sugestaoCarga(String nome, int series) {
+    final u = ultimasCargas(nome);
+    if (u == null || u.length < series || u.first <= 0) return null;
+    if (!u.every((c) => c == u.first)) return null;
+    final passo = u.first >= 20 ? 2.5 : 1.0;
+    return u.first + passo;
+  }
+
+  /// Exercício já registrado hoje neste dia do plano.
+  bool feitoHojeEx(String nome, String diaNome) {
+    final k = chaveData(DateTime.now());
+    for (final s in sessoes) {
+      final dt = DateTime.tryParse(s.data);
+      if (dt == null || s.dia != diaNome || chaveData(dt) != k) continue;
+      for (final m in s.detalhes ?? const <Map<String, dynamic>>[]) {
+        if (m['nome'] == nome) return true;
+      }
+    }
+    return false;
+  }
 
   Future<void> setCarga(String id, String v) async {
     cargas[id] = v;

@@ -11,6 +11,7 @@ import 'passos.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await app.init();
+  await app.aplicarManterTela();
   runApp(const TreinoApp());
 }
 

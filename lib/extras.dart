@@ -499,6 +499,18 @@ class ConfigTela extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            Vidro(
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('Manter a tela ligada', style: titulo(22)),
+                subtitle: const Text(
+                    'Não desliga a tela enquanto o app está aberto',
+                    style: TextStyle(color: kMudo)),
+                value: app.manterTela,
+                onChanged: (v) => app.setManterTela(v),
+              ),
+            ),
           ],
         ),
       ),

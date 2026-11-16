@@ -43,3 +43,13 @@ Esses módulos estão documentados no roadmap e dependem de decisões e serviço
   gráfico suave com toque e filtro de período, composição corporal, atalho p/ desempenho.
 * Seu desempenho (lib/desempenho.dart): tela resumo + tela completa (toque em "Seu desempenho").
 * Novo corpo anatômico com mapa de calor (lib/corpo.dart).
+
+--- v1.6.0 ---
+* Treino: topo com foto do dia e resumo (último treino: tempo, séries, kcal).
+* Cada exercício mostra a última carga e, quando há regra, "Tente X kg hoje".
+* Toque no exercício para "Começar daqui"; os já feitos hoje ficam com check e esmaecidos.
+* Botão Começar vira "Ver resumo de hoje" + cardio quando o treino de hoje já foi feito.
+* Cartões com cor e ícone por grupo muscular, equipamento ao lado do grupo.
+* Bloco de aquecimento opcional (liga/desliga no topo do treino).
+* Recorde: aviso durante o treino quando a carga passa da maior já registrada.
+* Configurações: opção "Manter a tela ligada".

@@ -13,6 +13,7 @@ import 'cardio.dart';
 import 'ex_edit.dart';
 import 'passos.dart';
 import 'desempenho.dart' show DesempenhoTela;
+import 'sessao_detalhe.dart';
 
 const kAzul = Color(0xFF0050E6);
 const kSuperf = Color(0xFF1C1C1E);
@@ -49,6 +50,49 @@ final estiloContorno = OutlinedButton.styleFrom(
 const _sem = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 String _dois(int n) => n.toString().padLeft(2, '0');
 String _fmt(int s) => '${_dois(s ~/ 60)}:${_dois(s % 60)}';
+
+/// Cor e ícone de cada grupo muscular (usados no lugar do número azul).
+class EstiloGrupo {
+  final Color cor;
+  final IconData icone;
+  const EstiloGrupo(this.cor, this.icone);
+}
+
+EstiloGrupo estiloGrupo(String grupo) {
+  final g = norm(grupo);
+  if (g.contains('peit')) {
+    return const EstiloGrupo(Color(0xFFE53935), Icons.fitness_center);
+  }
+  if (g.contains('costa') || g.contains('dorsal') || g.contains('lombar')) {
+    return const EstiloGrupo(Color(0xFF1E88E5), Icons.accessibility_new);
+  }
+  if (g.contains('perna') ||
+      g.contains('quadr') ||
+      g.contains('posterior') ||
+      g.contains('gluteo') ||
+      g.contains('panturr')) {
+    return const EstiloGrupo(Color(0xFF43A047), Icons.directions_walk);
+  }
+  if (g.contains('ombro')) {
+    return const EstiloGrupo(Color(0xFFFB8C00), Icons.pan_tool);
+  }
+  if (g.contains('triceps')) {
+    return const EstiloGrupo(Color(0xFFD81B60), Icons.bolt);
+  }
+  if (g.contains('biceps') || g.contains('bicep')) {
+    return const EstiloGrupo(Color(0xFF8E24AA), Icons.whatshot);
+  }
+  if (g.contains('antebraco')) {
+    return const EstiloGrupo(Color(0xFF6D4C41), Icons.back_hand);
+  }
+  if (g.contains('abdom') || g.contains('core')) {
+    return const EstiloGrupo(Color(0xFFFDD835), Icons.self_improvement);
+  }
+  if (g.contains('cardio')) {
+    return const EstiloGrupo(Color(0xFF00ACC1), Icons.directions_run);
+  }
+  return const EstiloGrupo(kAzul, Icons.fitness_center);
+}
 
 // ---------- Componentes visuais ----------
 class Fundo extends StatelessWidget {
@@ -951,7 +995,37 @@ class TreinoTela extends StatelessWidget {
     );
   }
 
+  /// Última sessão completa de hoje deste dia do plano (para o resumo).
+  Sessao? _sessaoDeHoje() {
+    Sessao? r;
+    final k = chaveData(DateTime.now());
+    for (final s in app.sessoes) {
+      final dt = DateTime.tryParse(s.data);
+      if (dt == null || s.cardio || s.dia != dia.nome || chaveData(dt) != k) {
+        continue;
+      }
+      if (r == null || s.data.compareTo(r!.data) > 0) r = s;
+    }
+    return r;
+  }
+
   Widget _corpo(BuildContext context) {
+    final hoje = DateTime.now();
+    final eHoje = dia.weekday == hoje.weekday;
+    final feitoHoje = app.feitos.contains(chaveData(hoje));
+    final series = dia.itens.fold<int>(0, (s, e) => s + e.series);
+    final ultima = app.ultimaSessaoDoDia(dia);
+    final min = ultima != null
+        ? (ultima.seg / 60).round().clamp(1, 600).toInt()
+        : (series * (40 + app.descanso) / 60).round();
+    final kcal = ultima == null
+        ? (min * 6.5).round()
+        : (ultima.kcal ?? (ultima.seg / 60 * 6.5).round());
+    final resumo = ultima != null
+        ? 'Último treino: ${fmtTempo(ultima.seg)} • ${ultima.series} séries • $kcal kcal'
+        : 'Estimado: ~$min min • $series séries • ~$kcal kcal';
+    final sessaoHoje = _sessaoDeHoje();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(dia.nome, style: titulo(28)),
@@ -969,63 +1043,236 @@ class TreinoTela extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
         children: [
-          if (dia.foco.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(dia.foco, style: const TextStyle(color: kMudo)),
-            ),
+          _cabecalho(resumo),
+          const SizedBox(height: 12),
+          _blocoAquecimento(),
           for (var i = 0; i < dia.itens.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Vidro(
-                padding: const EdgeInsets.all(14),
-                raio: 22,
-                onTap: () => detalheExercicio(context, dia.itens[i]),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0A1F4D),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Text('${i + 1}', style: titulo(24)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(app.ex(dia.itens[i].exId)?.nome ?? dia.itens[i].nome,
-                              style: titulo(22)),
-                          Text(dia.itens[i].grupo,
-                              style: const TextStyle(color: kMudo)),
-                        ],
-                      ),
-                    ),
-                    Text('${dia.itens[i].series} × ${dia.itens[i].reps}',
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-            ),
+            _cartaoExercicio(context, i),
         ],
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: FilledButton.icon(
-            style: estiloPrimario,
-            onPressed: dia.itens.isEmpty
-                ? null
-                : () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => RunTela(dia: dia)),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: feitoHoje
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FilledButton.icon(
+                      style: estiloPrimario,
+                      onPressed: sessaoHoje == null
+                          ? null
+                          : () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      SessaoDetalheTela(sessao: sessaoHoje),
+                                ),
+                              ),
+                      icon: const Icon(Icons.assessment_outlined),
+                      label: const Text('Ver resumo de hoje'),
                     ),
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Começar'),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: estiloContornoFino,
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => CardioTela(dia: hoje)),
+                            ),
+                            icon: const Icon(Icons.directions_run, size: 18),
+                            label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text('Fazer cardio')),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: estiloContornoFino,
+                            onPressed: () => registrarCardioManual(context, hoje),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text('Já fiz cardio')),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              : FilledButton.icon(
+                  style: estiloPrimario,
+                  onPressed: dia.itens.isEmpty
+                      ? null
+                      : () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => RunTela(dia: dia)),
+                          ),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: Text(eHoje ? 'Começar' : 'Começar • ~$min min'),
+                ),
+        ),
+      ),
+    );
+  }
+
+  /// Topo com a foto do dia (mesma do card da tela inicial) e o resumo.
+  Widget _cabecalho(String resumo) {
+    final foto = fotoDoDia(dia);
+    return Container(
+      height: 190,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B0B0D),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: branco(.14)),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (foto != null)
+            Image.asset(
+              fotoAsset(foto),
+              fit: BoxFit.cover,
+              alignment: Alignment(foto.ax, foto.ay),
+              gaplessPlayback: true,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.0, 0.4, 1.0],
+                colors: [
+                  Color(0x33000000),
+                  Color(0x99000000),
+                  Color(0xF5000000),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(dia.foco.isEmpty ? dia.nome : dia.foco,
+                    style: titulo(30)),
+                const SizedBox(height: 4),
+                Text(resumo,
+                    style: const TextStyle(color: kMudo, fontSize: 13)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Bloco de aquecimento opcional: liga ou desliga no topo da lista.
+  Widget _blocoAquecimento() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Vidro(
+        raio: 22,
+        padding: const EdgeInsets.fromLTRB(16, 8, 8, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.whatshot, color: kAzul),
+                const SizedBox(width: 10),
+                Expanded(child: Text('Aquecimento', style: titulo(22))),
+                Switch(
+                  value: app.aquecimento,
+                  onChanged: (v) => app.setAquecimento(v),
+                ),
+              ],
+            ),
+            if (app.aquecimento) ...[
+              const SizedBox(height: 4),
+              const Text('• 5 min de esteira ou bicicleta leve',
+                  style: TextStyle(color: kMudo)),
+              const Text('• Mobilidade de ombros e quadril, 1 min',
+                  style: TextStyle(color: kMudo)),
+              const Text('• 1 série leve do primeiro exercício, sem contar',
+                  style: TextStyle(color: kMudo)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _textoUltima(List<double> u) {
+    final n = u.length;
+    final s = n == 1 ? 'série' : 'séries';
+    if (u.every((c) => c <= 0)) return 'Última vez: $n $s';
+    if (u.every((c) => c == u.first)) {
+      return 'Última vez: ${fmtNum(u.first)} kg • $n $s';
+    }
+    return 'Última vez: ${u.map(fmtNum).join(' / ')} kg';
+  }
+
+  Widget _cartaoExercicio(BuildContext context, int i) {
+    final it = dia.itens[i];
+    final ex = app.ex(it.exId);
+    final nome = ex?.nome ?? it.nome;
+    final equip = ex?.equip ?? '';
+    final feito = app.feitoHojeEx(nome, dia.nome);
+    final estilo = estiloGrupo(it.grupo);
+    final ultimas = app.ultimasCargas(nome);
+    final sugerida = app.sugestaoCarga(nome, it.series);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Opacity(
+        opacity: feito ? .45 : 1,
+        child: Vidro(
+          padding: const EdgeInsets.all(14),
+          raio: 22,
+          onTap: () => detalheExercicio(context, it, dia: dia, indice: i),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: estilo.cor.withOpacity(.22),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: estilo.cor, width: 1.5),
+                ),
+                child: Icon(feito ? Icons.check : estilo.icone,
+                    color: feito ? Colors.white : estilo.cor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(nome, style: titulo(22)),
+                    Text(equip.isEmpty ? it.grupo : '${it.grupo} • $equip',
+                        style: TextStyle(color: estilo.cor, fontSize: 13)),
+                    if (ultimas != null && ultimas.isNotEmpty)
+                      Text(_textoUltima(ultimas),
+                          style: const TextStyle(color: kMudo, fontSize: 12)),
+                    if (sugerida != null)
+                      Text('Tente ${fmtNum(sugerida)} kg hoje',
+                          style: const TextStyle(color: kAzul, fontSize: 13)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('${it.series} × ${it.reps}',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+            ],
           ),
         ),
       ),
@@ -1050,18 +1297,21 @@ void abrirImportar(BuildContext context, void Function(int) irPara) {
   );
 }
 
-void detalheExercicio(BuildContext context, Item it) {
+void detalheExercicio(BuildContext context, Item it,
+    {Dia? dia, int indice = 0}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: kSuperf,
-    builder: (c) => _DetalheEx(it: it),
+    builder: (c) => _DetalheEx(it: it, dia: dia, indice: indice),
   );
 }
 
 class _DetalheEx extends StatefulWidget {
   final Item it;
-  const _DetalheEx({required this.it});
+  final Dia? dia;
+  final int indice;
+  const _DetalheEx({required this.it, this.dia, this.indice = 0});
   @override
   State<_DetalheEx> createState() => _DetalheExEstado();
 }
@@ -1136,6 +1386,22 @@ class _DetalheExEstado extends State<_DetalheEx> {
                 ),
               ),
             ),
+            if (widget.dia != null) ...[
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                style: estiloPrimario,
+                onPressed: () {
+                  final nav = Navigator.of(context);
+                  nav.pop();
+                  nav.push(MaterialPageRoute(
+                    builder: (_) =>
+                        RunTela(dia: widget.dia!, inicio: widget.indice),
+                  ));
+                },
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text('Começar daqui'),
+              ),
+            ],
           ],
         ),
       ),
@@ -1164,7 +1430,13 @@ class _ResumoEx {
 class RunTela extends StatefulWidget {
   final Dia dia;
   final bool livre;
-  const RunTela({super.key, required this.dia, this.livre = false});
+  final int inicio; // exercício em que começar ("começar daqui")
+  const RunTela({
+    super.key,
+    required this.dia,
+    this.livre = false,
+    this.inicio = 0,
+  });
   @override
   State<RunTela> createState() => _RunEstado();
 }
@@ -1177,11 +1449,15 @@ class _RunEstado extends State<RunTela> {
   final _carga = TextEditingController();
   final List<_ResumoEx> resumo = [];
   final List<double> _cargasEx = [];
+  final Set<String> _recordes = {}; // exercícios que bateram o recorde nesta sessão
   Item get it => widget.dia.itens[ei];
 
   @override
   void initState() {
     super.initState();
+    if (widget.inicio > 0 && widget.inicio < widget.dia.itens.length) {
+      ei = widget.inicio;
+    }
     _carregar();
     _t = Timer.periodic(const Duration(seconds: 1), (_) {
       if (pausado) return;
@@ -1204,6 +1480,8 @@ class _RunEstado extends State<RunTela> {
   void _concluir() {
     app.setCarga(it.exId, _carga.text.trim());
     final cg = double.tryParse(_carga.text.trim().replaceAll(',', '.')) ?? 0;
+    final recAtual = app.recorde(app.ex(it.exId)?.nome ?? it.nome);
+    if (cg > 0 && recAtual != null && cg > recAtual) _recordes.add(it.exId);
     volume += cg * repsMedio(it.reps);
     feitasSeries++;
     _cargasEx.add(cg);
@@ -1375,6 +1653,22 @@ class _RunEstado extends State<RunTela> {
                   Text(
                       '${it.grupo} • exercício ${ei + 1} de ${widget.dia.itens.length}',
                       style: const TextStyle(color: kMudo)),
+                  if (_recordes.contains(it.exId))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.amber,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Text('Recorde! Maior carga',
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                    ),
                   if ((app.obs[it.exId] ?? '').isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
