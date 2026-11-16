@@ -63,3 +63,6 @@ Esses módulos estão documentados no roadmap e dependem de decisões e serviço
 
 --- v1.7.1 ---
 * Na lista do treino de hoje, "Excluir e finalizar treino" tira um exercício só da sessão de hoje (com confirmação) e salva o treino como completo, com os exercícios feitos. A rotina não muda.
+
+--- v1.7.2 ---
+* Novo ícone do app (Meu Treino).
