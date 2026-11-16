@@ -14,6 +14,7 @@ import 'ex_edit.dart';
 import 'passos.dart';
 import 'desempenho.dart' show DesempenhoTela;
 import 'sessao_detalhe.dart';
+import 'compartilhar.dart';
 
 const kAzul = Color(0xFF0050E6);
 const kSuperf = Color(0xFF1C1C1E);
@@ -1264,7 +1265,10 @@ class TreinoTela extends StatelessWidget {
                       Text(_textoUltima(ultimas),
                           style: const TextStyle(color: kMudo, fontSize: 12)),
                     if (sugerida != null)
-                      Text('Tente ${fmtNum(sugerida)} kg hoje',
+                      Text(
+                          sugerida.subir
+                              ? 'Tente ${fmtNum(sugerida.carga)} kg hoje'
+                              : 'Mantenha ${fmtNum(sugerida.carga)} kg hoje',
                           style: const TextStyle(color: kAzul, fontSize: 13)),
                   ],
                 ),
@@ -1442,7 +1446,10 @@ class RunTela extends StatefulWidget {
 }
 
 class _RunEstado extends State<RunTela> {
-  int ei = 0, si = 0, seg = 0, descanso = 0, feitasSeries = 0;
+  late List<int> _fila; // ordem dos exercícios; "Pular" manda o atual para o fim
+  int get ei => _fila.first;
+  int si = 0, seg = 0, descanso = 0, feitasSeries = 0;
+  final Map<String, String> _rpeNome = {}; // nome do exercício -> Fácil/Ok/Pesado
   bool pausado = false;
   double volume = 0;
   late Timer _t;
@@ -1455,9 +1462,9 @@ class _RunEstado extends State<RunTela> {
   @override
   void initState() {
     super.initState();
-    if (widget.inicio > 0 && widget.inicio < widget.dia.itens.length) {
-      ei = widget.inicio;
-    }
+    final n = widget.dia.itens.length;
+    final ini = widget.inicio > 0 && widget.inicio < n ? widget.inicio : 0;
+    _fila = [for (var k = 0; k < n; k++) (ini + k) % n];
     _carregar();
     _t = Timer.periodic(const Duration(seconds: 1), (_) {
       if (pausado) return;
@@ -1477,7 +1484,7 @@ class _RunEstado extends State<RunTela> {
 
   void _carregar() => _carga.text = app.cargas[it.exId] ?? '';
 
-  void _concluir() {
+  Future<void> _concluir() async {
     app.setCarga(it.exId, _carga.text.trim());
     final cg = double.tryParse(_carga.text.trim().replaceAll(',', '.')) ?? 0;
     final recAtual = app.recorde(app.ex(it.exId)?.nome ?? it.nome);
@@ -1489,15 +1496,17 @@ class _RunEstado extends State<RunTela> {
       resumo.add(_ResumoEx(app.ex(it.exId)?.nome ?? it.nome, it.grupo,
           it.reps, List<double>.from(_cargasEx)));
       _cargasEx.clear();
+      await _perguntarRpe();
+      if (!mounted) return;
     }
     if (si + 1 < it.series) {
       setState(() {
         si++;
         descanso = app.descanso;
       });
-    } else if (ei + 1 < widget.dia.itens.length) {
+    } else if (_fila.length > 1) {
       setState(() {
-        ei++;
+        _fila.removeAt(0);
         si = 0;
         descanso = app.descanso;
         _carregar();
@@ -1505,6 +1514,40 @@ class _RunEstado extends State<RunTela> {
     } else {
       _fim();
     }
+  }
+
+  /// Pula para o próximo; este volta ao fim da fila (só se ainda não há série feita).
+  void _pular() {
+    setState(() {
+      _fila.add(_fila.removeAt(0));
+      si = 0;
+      descanso = 0;
+      _carregar();
+    });
+  }
+
+  /// RPE: como foi o exercício que acabou de terminar. Ajusta a sugestão da próxima vez.
+  Future<void> _perguntarRpe() async {
+    final nome = app.ex(it.exId)?.nome ?? it.nome;
+    final escolha = await showDialog<String>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Como foi $nome?'),
+        content: const Text('Isso ajusta a sugestão de carga da próxima vez.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, 'Fácil'),
+              child: const Text('Fácil')),
+          TextButton(
+              onPressed: () => Navigator.pop(c, 'Ok'),
+              child: const Text('Ok')),
+          TextButton(
+              onPressed: () => Navigator.pop(c, 'Pesado'),
+              child: const Text('Pesado')),
+        ],
+      ),
+    );
+    if (escolha != null) _rpeNome[nome] = escolha;
   }
 
   Future<void> _fim({bool parcial = false}) async {
@@ -1521,7 +1564,7 @@ class _RunEstado extends State<RunTela> {
       Navigator.of(context).popUntil((r) => r.isFirst);
       return;
     }
-    await app.addSessao(Sessao(
+    final sessao = Sessao(
       data: DateTime.now().toIso8601String(),
       dia: widget.dia.nome,
       seg: seg,
@@ -1537,9 +1580,11 @@ class _RunEstado extends State<RunTela> {
             'grupo': r.grupo,
             'reps': r.reps,
             'cargas': r.cargas,
+            'rpe': _rpeNome[r.nome] ?? '',
           },
       ],
-    ));
+    );
+    await app.addSessao(sessao);
     if (!parcial && !widget.livre) await app.concluirDia(DateTime.now());
     if (!mounted) return;
     final nav = Navigator.of(context);
@@ -1570,12 +1615,19 @@ class _RunEstado extends State<RunTela> {
               onPressed: () => Navigator.pop(c, 'cardio'),
               child: const Text('Fazer cardio')),
           TextButton(
+              onPressed: () => Navigator.pop(c, 'share'),
+              child: const Text('Compartilhar')),
+          TextButton(
               onPressed: () => Navigator.pop(c, 'ok'),
               child: const Text('OK')),
         ],
       ),
     );
     nav.popUntil((r) => r.isFirst);
+    if (acao == 'share') {
+      nav.push(MaterialPageRoute(
+          builder: (_) => CompartilharTela(sessao: sessao)));
+    }
     if (acao == 'cardio') {
       nav.push(MaterialPageRoute(builder: (_) => const CardioTela()));
     }
@@ -1605,9 +1657,7 @@ class _RunEstado extends State<RunTela> {
   @override
   Widget build(BuildContext context) {
     final nome = app.ex(it.exId)?.nome ?? it.nome;
-    final prox = ei + 1 < widget.dia.itens.length
-        ? widget.dia.itens[ei + 1]
-        : null;
+    final prox = _fila.length > 1 ? widget.dia.itens[_fila[1]] : null;
     return Scaffold(
       body: SafeArea(
         child: ListView(
@@ -1701,6 +1751,16 @@ class _RunEstado extends State<RunTela> {
                 padding: const EdgeInsets.only(top: 16),
                 child: Text('Próximo: ${prox.nome}',
                     style: const TextStyle(color: kMudo)),
+              ),
+            if (si == 0 && _fila.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: OutlinedButton.icon(
+                  style: estiloContornoFino,
+                  onPressed: _pular,
+                  icon: const Icon(Icons.skip_next, size: 18),
+                  label: const Text('Pular para o próximo'),
+                ),
               ),
             if (resumo.isNotEmpty) ...[
               const SizedBox(height: 20),

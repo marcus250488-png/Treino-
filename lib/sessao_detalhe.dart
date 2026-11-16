@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'state.dart';
 import 'telas.dart';
 import 'extras.dart' show fmtTempo, fmtNum;
+import 'compartilhar.dart';
 
 /// Resumo completo de um treino ou cardio do histórico.
 class SessaoDetalheTela extends StatelessWidget {
@@ -50,7 +51,19 @@ class SessaoDetalheTela extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
           title: Text(s.cardio ? 'Resumo do cardio' : 'Resumo do treino',
-              style: titulo(28))),
+              style: titulo(28)),
+          actions: [
+            if (!s.cardio)
+              IconButton(
+                tooltip: 'Compartilhar',
+                icon: const Icon(Icons.ios_share),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => CompartilharTela(sessao: s)),
+                ),
+              ),
+          ]),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 40),
         children: [

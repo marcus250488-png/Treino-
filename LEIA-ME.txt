@@ -53,3 +53,10 @@ Esses módulos estão documentados no roadmap e dependem de decisões e serviço
 * Bloco de aquecimento opcional (liga/desliga no topo do treino).
 * Recorde: aviso durante o treino quando a carga passa da maior já registrada.
 * Configurações: opção "Manter a tela ligada".
+
+--- v1.7.0 ---
+* Pular exercício durante o treino: o pulado volta ao fim da fila.
+* RPE ao terminar cada exercício (Fácil / Ok / Pesado) ajusta a sugestão de carga.
+* Cartão de compartilhamento 9:16 (story / status), ao concluir o treino.
+* Dependências novas: share_plus e path_provider.
+* Resumo do treino no Histórico tem botão Compartilhar.

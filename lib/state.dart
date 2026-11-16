@@ -329,6 +329,13 @@ List<Dia> lerPlano(String bruto, List<Exercicio> lib) {
 }
 
 // ---------- Estado do app ----------
+/// Sugestão de carga para hoje. [subir] = tente mais; senão, mantenha.
+class Sugestao {
+  final double carga;
+  final bool subir;
+  const Sugestao(this.carga, this.subir);
+}
+
 class AppState extends ChangeNotifier {
   List<Exercicio> lib = [];
   List<Exercicio> _base = [];
@@ -1513,13 +1520,36 @@ class AppState extends ChangeNotifier {
     return r;
   }
 
-  /// Se na última vez todas as séries saíram com a mesma carga, sugere subir um passo.
-  double? sugestaoCarga(String nome, int series) {
-    final u = ultimasCargas(nome);
-    if (u == null || u.length < series || u.first <= 0) return null;
-    if (!u.every((c) => c == u.first)) return null;
-    final passo = u.first >= 20 ? 2.5 : 1.0;
-    return u.first + passo;
+  /// Registro mais recente deste exercício (cargas e RPE).
+  Map<String, dynamic>? _ultimoRegistro(String nome) {
+    Map<String, dynamic>? achado;
+    DateTime? quando;
+    for (final s in sessoes) {
+      final dt = DateTime.tryParse(s.data);
+      if (dt == null || s.detalhes == null) continue;
+      for (final m in s.detalhes!) {
+        if (m['nome'] == nome && (quando == null || dt.isAfter(quando))) {
+          achado = m;
+          quando = dt;
+        }
+      }
+    }
+    return achado;
+  }
+
+  /// Sugestão para hoje pelo RPE da última vez: Fácil sobe; Ok/Pesado mantém.
+  /// Sem RPE: sobe se todas as séries saíram com a mesma carga.
+  Sugestao? sugestaoCarga(String nome, int series) {
+    final m = _ultimoRegistro(nome);
+    if (m == null) return null;
+    final u = _cargasDe(m);
+    if (u.isEmpty || u.first <= 0) return null;
+    final passo = u.last >= 20 ? 2.5 : 1.0;
+    final rpe = (m['rpe'] ?? '') as String;
+    if (rpe == 'Fácil') return Sugestao(u.last + passo, true);
+    if (rpe == 'Ok' || rpe == 'Pesado') return Sugestao(u.last, false);
+    if (u.length < series || !u.every((c) => c == u.first)) return null;
+    return Sugestao(u.first + passo, true);
   }
 
   /// Exercício já registrado hoje neste dia do plano.
