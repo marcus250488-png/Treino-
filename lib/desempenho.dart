@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'corpo.dart';
+import 'corpo_muscular.dart';
 import 'extras.dart' show fmtTempo, fmtNum, fmtDataIso;
 import 'state.dart';
 import 'telas.dart';

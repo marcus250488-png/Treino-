@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data' show ByteData;
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'corpo.dart';

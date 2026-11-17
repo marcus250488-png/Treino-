@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'corpo.dart';
+import 'corpo_muscular.dart';
 import 'desempenho.dart' show DesempenhoDetalheTela, Periodo, calcular;
 import 'extras.dart' show campo, lerNum, pedirNumero, fmtNum, fmtDataIso;
 import 'state.dart';
