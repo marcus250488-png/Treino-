@@ -15,6 +15,7 @@ import 'passos.dart';
 import 'desempenho.dart' show DesempenhoTela;
 import 'sessao_detalhe.dart';
 import 'compartilhar.dart';
+import 'anatomia.dart';
 
 const kAzul = Color(0xFF0050E6);
 const kSuperf = Color(0xFF1C1C1E);
@@ -49,6 +50,83 @@ final estiloContorno = OutlinedButton.styleFrom(
 );
 
 const _sem = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+/// Anel fino com um brilho que gira em volta do dia selecionado.
+class _AnelBrilho extends StatefulWidget {
+  final Widget child;
+  const _AnelBrilho({required this.child});
+  @override
+  State<_AnelBrilho> createState() => _AnelBrilhoEstado();
+}
+
+class _AnelBrilhoEstado extends State<_AnelBrilho>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 2800))
+    ..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      child: widget.child,
+      builder: (context, child) => CustomPaint(
+        foregroundPainter: _AnelBrilhoPainter(_c.value),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _AnelBrilhoPainter extends CustomPainter {
+  final double t;
+  _AnelBrilhoPainter(this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rr =
+        RRect.fromRectAndRadius(rect.deflate(1), const Radius.circular(16));
+    final shader = SweepGradient(
+      colors: [
+        kAzul.withOpacity(0),
+        kAzul,
+        Colors.white,
+        kAzul,
+        kAzul.withOpacity(0),
+      ],
+      stops: const [0.0, 0.3, 0.42, 0.54, 1.0],
+      transform: GradientRotation(t * 6.283185307),
+    ).createShader(rect);
+    // brilho suave por baixo
+    canvas.drawRRect(
+        rr,
+        Paint()
+          ..shader = shader
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 4
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
+    // linha fina e nítida
+    canvas.drawRRect(
+        rr,
+        Paint()
+          ..shader = shader
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AnelBrilhoPainter old) => old.t != t;
+}
+
+Widget _envolveSel(bool sel, Widget child) =>
+    sel ? _AnelBrilho(child: child) : child;
 String _dois(int n) => n.toString().padLeft(2, '0');
 String _fmt(int s) => '${_dois(s ~/ 60)}:${_dois(s % 60)}';
 
@@ -667,7 +745,7 @@ class _InicioEstado extends State<InicioTela> {
     return Expanded(
       child: GestureDetector(
         onTap: () => _escolherDia(i),
-        child: AnimatedContainer(
+        child: _envolveSel(sel, AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.symmetric(horizontal: 3),
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -675,7 +753,7 @@ class _InicioEstado extends State<InicioTela> {
             color: sel ? const Color(0xFF0A1F4D) : branco(.07),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-                color: sel ? kAzul : branco(.12), width: sel ? 2 : 1),
+                color: sel ? kAzul : branco(.12), width: 1),
           ),
           child: Column(
             children: [
@@ -707,7 +785,7 @@ class _InicioEstado extends State<InicioTela> {
               ),
             ],
           ),
-        ),
+        )),
       ),
     );
   }
@@ -1149,7 +1227,7 @@ class TreinoTela extends StatelessWidget {
             Image.asset(
               fotoAsset(foto),
               fit: BoxFit.cover,
-              alignment: Alignment(foto.ax, foto.ay),
+              alignment: Alignment(foto.ax, -0.7), // desce a foto: cabeça visível
               gaplessPlayback: true,
               errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
@@ -1458,6 +1536,20 @@ class _DetalheExEstado extends State<_DetalheEx> {
                 ),
               ),
             ),
+            if (app.ex(widget.it.exId) != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                style: estiloContornoFino,
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          AnatomiaTela(ex: app.ex(widget.it.exId)!)),
+                ),
+                icon: const Icon(Icons.accessibility_new, size: 18),
+                label: const Text('Ver anatomia'),
+              ),
+            ],
             if (widget.dia != null) ...[
               const SizedBox(height: 20),
               FilledButton.icon(
@@ -2092,6 +2184,17 @@ class _BibEstado extends State<BibliotecaTela> {
             if (e.apelidos.isNotEmpty)
               Text('Também: ${e.apelidos.join(', ')}',
                   style: const TextStyle(color: kMudo)),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              style: estiloPrimario,
+              onPressed: () {
+                Navigator.pop(c);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => AnatomiaTela(ex: e)));
+              },
+              icon: const Icon(Icons.accessibility_new),
+              label: const Text('Ver anatomia'),
+            ),
           ],
         ),
       ),
@@ -2109,6 +2212,16 @@ class _BibEstado extends State<BibliotecaTela> {
           listenable: app,
           builder: (context, _) {
             final lista = _filtrar();
+            // Agrupa por grupo muscular: cabeçalho antes de cada grupo.
+            final itens = <Object>[];
+            String? grupoAtual;
+            for (final e in lista) {
+              if (e.grupo != grupoAtual) {
+                grupoAtual = e.grupo;
+                itens.add(e.grupo);
+              }
+              itens.add(e);
+            }
             return Column(
               children: [
                 if (!widget.selecionar)
@@ -2147,9 +2260,16 @@ class _BibEstado extends State<BibliotecaTela> {
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.only(bottom: 120),
-                    itemCount: lista.length,
+                    itemCount: itens.length,
                     itemBuilder: (context, i) {
-                      final e = lista[i];
+                      final o = itens[i];
+                      if (o is String) {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+                          child: Text(o, style: titulo(22)),
+                        );
+                      }
+                      final e = o as Exercicio;
                       return Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 4),

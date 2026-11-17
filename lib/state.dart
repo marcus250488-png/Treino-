@@ -351,6 +351,7 @@ class AppState extends ChangeNotifier {
   double? metaPeso;
   int descanso = 75;
   bool manterTela = false; // não desligar a tela com o app aberto
+  Map<String, dynamic> anatomia = {}; // id do exercício -> músculos, execução, dicas
   bool aquecimento = false; // bloco de aquecimento no topo do treino
   late SharedPreferences _p;
 
@@ -480,6 +481,8 @@ class AppState extends ChangeNotifier {
     _base = base
         .map((e) => Exercicio.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
+    anatomia = Map<String, dynamic>.from(jsonDecode(
+        await rootBundle.loadString('assets/anatomia.json')) as Map);
     final nu = jsonDecode(await rootBundle.loadString('assets/nutricao.json'))
         as Map<String, dynamic>;
     _alimBase = (nu['alimentos'] as List)

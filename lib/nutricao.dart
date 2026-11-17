@@ -5,6 +5,7 @@ import 'telas.dart';
 import 'nutri_modelo.dart';
 import 'dart:async';
 import 'busca_alimentos.dart';
+import 'onda_agua.dart';
 
 double? _num(String s) => double.tryParse(s.trim().replaceAll(',', '.'));
 
@@ -269,15 +270,7 @@ class _NutricaoEstado extends State<NutricaoTela> {
                 style: const TextStyle(color: kMudo)),
           ),
           const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: prog,
-              minHeight: 8,
-              backgroundColor: branco(.1),
-              color: kAzul,
-            ),
-          ),
+          OndaAgua(prog: prog),
           const SizedBox(height: 14),
           Row(
             children: [

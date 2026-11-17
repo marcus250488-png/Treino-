@@ -70,3 +70,12 @@ Esses módulos estão documentados no roadmap e dependem de decisões e serviço
 --- v1.7.3 ---
 * Botão "Adicionar 1 série" durante o exercício (vale só nesta execução).
 * Treino parcial: ao continuar, o app faz só os exercícios que faltam hoje, e o botão mostra quantos faltam.
+
+--- v1.7.4 ---
+* Dia selecionado na Início: anel mais fino com brilho girando.
+* Foto do cabeçalho do treino desceu para mostrar a cabeça.
+
+--- v1.8.0 ---
+* Água: onda animada que sobe conforme a meta.
+* Biblioteca separada por grupo muscular, com 25 exercícios novos.
+* Tela de anatomia por exercício (músculos, objetivo, execução, dicas). A foto entra em assets/exercicios/<id>.jpg.

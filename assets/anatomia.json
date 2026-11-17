@@ -1,0 +1,794 @@
+{
+ "supino-inclinado-maq": {
+  "principal": [
+   "Peitoral maior (porção clavicular)"
+  ],
+  "secundario": [
+   "Deltoide anterior",
+   "Tríceps"
+  ],
+  "estabilizador": [
+   "Serrátil anterior"
+  ],
+  "objetivo": "Trabalhar a parte superior do peito com carga controlada na máquina.",
+  "execucao": [
+   "Ajuste o banco para ficar com as costas bem apoiadas.",
+   "Empurre as alças para frente até quase estender os cotovelos, sem travar.",
+   "Volte devagar, sentindo o alongamento do peito."
+  ],
+  "dicas": [
+   "Mantenha os ombros para baixo e longe das orelhas.",
+   "Não tire os glúteos do banco.",
+   "Controle a descida em cerca de 2 a 3 segundos."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "supino-reto-maq": {
+  "principal": [
+   "Peitoral maior"
+  ],
+  "secundario": [
+   "Deltoide anterior",
+   "Tríceps"
+  ],
+  "estabilizador": [
+   "Serrátil anterior"
+  ],
+  "objetivo": "Desenvolver o peitoral médio com trajetória guiada pela máquina.",
+  "execucao": [
+   "Sente com as costas apoiadas e as alças na altura do peito.",
+   "Empurre até quase estender os cotovelos.",
+   "Retorne devagar até sentir o peito alongar."
+  ],
+  "dicas": [
+   "Não deixe os ombros subirem.",
+   "Mantenha os punhos alinhados com os cotovelos.",
+   "Evite travar os cotovelos no final."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "supino-declinado-maq": {
+  "principal": [
+   "Peitoral maior (porção inferior)"
+  ],
+  "secundario": [
+   "Tríceps",
+   "Deltoide anterior"
+  ],
+  "estabilizador": [
+   "Serrátil anterior"
+  ],
+  "objetivo": "Enfatizar a parte inferior do peitoral.",
+  "execucao": [
+   "Ajuste o banco inclinado para baixo e prenda bem o corpo.",
+   "Empurre as alças para cima e levemente para frente.",
+   "Desça controlando até sentir o alongamento."
+  ],
+  "dicas": [
+   "Não bata o peso no apoio.",
+   "Mantenha a lombar encostada no banco.",
+   "Respire na descida e expire na subida."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "crucifixo-maq": {
+  "principal": [
+   "Peitoral maior"
+  ],
+  "secundario": [
+   "Deltoide anterior"
+  ],
+  "estabilizador": [
+   "Bíceps (pequeno papel)"
+  ],
+  "objetivo": "Isolar o peitoral com movimento de abertura e fechamento.",
+  "execucao": [
+   "Ajuste a altura para os braços ficarem paralelos ao chão.",
+   "Aproxime as mãos na frente do peito, mantendo os cotovelos levemente flexionados.",
+   "Volte devagar até sentir o peito abrir."
+  ],
+  "dicas": [
+   "Não use carga excessiva a ponto de perder a amplitude.",
+   "Mantenha os ombros para baixo.",
+   "Foque em contrair o peito, não em empurrar com os braços."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "supino-reto-barra": {
+  "principal": [
+   "Peitoral maior"
+  ],
+  "secundario": [
+   "Tríceps",
+   "Deltoide anterior"
+  ],
+  "estabilizador": [
+   "Serrátil anterior",
+   "Core"
+  ],
+  "objetivo": "Principal exercício de força para o peitoral.",
+  "execucao": [
+   "Deite no banco com os pés firmes no chão e escápulas juntas.",
+   "Desça a barra até a linha do peito.",
+   "Empurre de volta sem tirar os quadris do banco."
+  ],
+  "dicas": [
+   "Use pegada um pouco mais larga que os ombros.",
+   "Não quique a barra no peito.",
+   "Peça ajuda (trava de segurança) com cargas altas."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "triceps-corda": {
+  "principal": [
+   "Tríceps (cabeça lateral e medial)"
+  ],
+  "secundario": [
+   "Antebraço"
+  ],
+  "estabilizador": [
+   "Deltoide posterior"
+  ],
+  "objetivo": "Trabalhar a extensão do cotovelo com pegada na polia.",
+  "execucao": [
+   "Segure a corda com os cotovelos colados ao corpo.",
+   "Estenda os cotovelos e abra a corda no final.",
+   "Volte controlando, sem deixar os cotovelos se afastarem."
+  ],
+  "dicas": [
+   "Mantenha os cotovelos parados ao lado do tronco.",
+   "Não balance o corpo para ganhar carga.",
+   "Pausa de 1 segundo com os braços esticados."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "triceps-frances": {
+  "principal": [
+   "Tríceps (cabeça longa)"
+  ],
+  "secundario": [
+   "Antebraço"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Alongar e fortalecer a cabeça longa do tríceps, que cruza o ombro.",
+  "execucao": [
+   "Segure o halter ou a barra com as duas mãos acima da cabeça.",
+   "Flexione os cotovelos, levando o peso atrás da cabeça.",
+   "Estenda os braços de volta sem mover os cotovelos para fora."
+  ],
+  "dicas": [
+   "Mantenha os cotovelos apontados para cima.",
+   "Não arqueie a lombar.",
+   "Desça até sentir alongamento no braço."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "triceps-frances-polia": {
+  "principal": [
+   "Tríceps (cabeça longa)"
+  ],
+  "secundario": [
+   "Antebraço"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Versão na polia do tríceps acima da cabeça, com tensão constante.",
+  "execucao": [
+   "Fique de costas para a polia, com a corda acima da cabeça.",
+   "Estenda os cotovelos para cima.",
+   "Volte controlando até sentir o alongamento."
+  ],
+  "dicas": [
+   "Mantenha o core firme.",
+   "Cotovelos apontados para cima e próximos da cabeça.",
+   "Não deixe a carga bater no final."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "agachamento-smith": {
+  "principal": [
+   "Quadríceps"
+  ],
+  "secundario": [
+   "Glúteo máximo",
+   "Posterior de coxa"
+  ],
+  "estabilizador": [
+   "Core",
+   "Panturrilha"
+  ],
+  "objetivo": "Fortalecer as pernas com trajetória guiada pela barra do Smith.",
+  "execucao": [
+   "Posicione a barra nos ombros e os pés um pouco à frente da barra.",
+   "Desça flexionando joelhos e quadris até a coxa passar do paralelo, se confortável.",
+   "Suba empurrando o chão com os pés."
+  ],
+  "dicas": [
+   "Joelhos alinhados com a ponta dos pés.",
+   "Mantenha o peito aberto e a coluna neutra.",
+   "Ajuste a altura da trava de segurança."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "agachamento-livre": {
+  "principal": [
+   "Quadríceps",
+   "Glúteo máximo"
+  ],
+  "secundario": [
+   "Posterior de coxa",
+   "Adutores"
+  ],
+  "estabilizador": [
+   "Core",
+   "Lombar",
+   "Panturrilha"
+  ],
+  "objetivo": "Exercício fundamental de força e massa para as pernas e o quadril.",
+  "execucao": [
+   "Barra apoiada nos trapézios, pés na largura dos ombros.",
+   "Empurre os quadris para trás e flexione os joelhos.",
+   "Suba empurrando o chão, mantendo o peito erguido."
+  ],
+  "dicas": [
+   "Mantenha a coluna neutra o tempo todo.",
+   "Joelhos não devem cair para dentro.",
+   "Respire fundo antes de descer e segure o ar na subida."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "leg-press": {
+  "principal": [
+   "Quadríceps",
+   "Glúteo máximo"
+  ],
+  "secundario": [
+   "Posterior de coxa",
+   "Adutores"
+  ],
+  "estabilizador": [
+   "Panturrilha"
+  ],
+  "objetivo": "Trabalhar as pernas com apoio nas costas e carga alta.",
+  "execucao": [
+   "Sente com as costas apoiadas e os pés na plataforma na largura dos ombros.",
+   "Flexione os joelhos até cerca de 90 graus.",
+   "Empurre a plataforma sem travar os joelhos."
+  ],
+  "dicas": [
+   "Não tire os quadris do banco.",
+   "Não deixe os joelhos baterem no peito.",
+   "Mantenha os calcanhares apoiados."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "cadeira-extensora": {
+  "principal": [
+   "Quadríceps (reto femoral e vastos)"
+  ],
+  "secundario": [
+   "Nenhum relevante"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Isolar o quadríceps com extensão do joelho.",
+  "execucao": [
+   "Sente com o apoio do tornozelo logo acima do pé.",
+   "Estenda os joelhos até quase travar.",
+   "Desça controlando, sem deixar a carga cair."
+  ],
+  "dicas": [
+   "Ajuste o encosto para o quadril ficar firme.",
+   "Pausa curta no topo do movimento.",
+   "Evite usar impulso."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "puxada-alta-aberta": {
+  "principal": [
+   "Grande dorsal"
+  ],
+  "secundario": [
+   "Bíceps",
+   "Romboides",
+   "Trapézio médio"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Trabalhar a largura das costas com puxada à frente do corpo.",
+  "execucao": [
+   "Segure a barra com pegada aberta e sente com as coxas travadas.",
+   "Puxe a barra em direção à parte alta do peito, levando os cotovelos para baixo.",
+   "Volte devagar, sentindo as costas esticarem."
+  ],
+  "dicas": [
+   "Mantenha o peito aberto.",
+   "Não jogue o tronco para trás.",
+   "Foque em puxar com as costas, não com os braços."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "puxada-neutra": {
+  "principal": [
+   "Grande dorsal"
+  ],
+  "secundario": [
+   "Bíceps",
+   "Romboides"
+  ],
+  "estabilizador": [
+   "Antebraço",
+   "Core"
+  ],
+  "objetivo": "Puxada com pegada neutra, que costuma ser confortável para os ombros.",
+  "execucao": [
+   "Segure as alças com as palmas voltadas uma para a outra.",
+   "Puxe a alça em direção ao peito, levando os cotovelos para baixo e para trás.",
+   "Volte controlando o movimento."
+  ],
+  "dicas": [
+   "Mantenha o tronco quase parado.",
+   "Escápulas descendo antes de puxar.",
+   "Não encolha os ombros."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "remada-baixa-maq": {
+  "principal": [
+   "Grande dorsal",
+   "Romboides"
+  ],
+  "secundario": [
+   "Bíceps",
+   "Trapézio médio",
+   "Posterior de ombro"
+  ],
+  "estabilizador": [
+   "Lombar"
+  ],
+  "objetivo": "Fortalecer a espessura das costas com puxada horizontal.",
+  "execucao": [
+   "Sente com os pés apoiados e o peito erguido.",
+   "Puxe a alça em direção ao abdômen, levando os cotovelos para trás.",
+   "Volte devagar, esticando as costas sem arredondar."
+  ],
+  "dicas": [
+   "Mantenha a coluna neutra.",
+   "Aperte as escápulas no final.",
+   "Não balance o tronco."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "remada-articulada": {
+  "principal": [
+   "Grande dorsal",
+   "Romboides"
+  ],
+  "secundario": [
+   "Bíceps",
+   "Trapézio médio"
+  ],
+  "estabilizador": [
+   "Lombar",
+   "Core"
+  ],
+  "objetivo": "Remada com trajetória livre, mais natural para os ombros.",
+  "execucao": [
+   "Segure as alças e incline levemente o tronco para frente.",
+   "Puxe os cotovelos para trás em direção ao corpo.",
+   "Volte esticando as costas, sem arredondar a lombar."
+  ],
+  "dicas": [
+   "Mantenha o peito aberto.",
+   "Não deixe a cabeça cair.",
+   "Use carga que permita controle total."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "remada-curvada": {
+  "principal": [
+   "Grande dorsal",
+   "Romboides"
+  ],
+  "secundario": [
+   "Bíceps",
+   "Trapézio médio",
+   "Posterior de ombro"
+  ],
+  "estabilizador": [
+   "Lombar",
+   "Posterior de coxa",
+   "Core"
+  ],
+  "objetivo": "Exercício de força para as costas com barra, exigindo bastante controle.",
+  "execucao": [
+   "Pegue a barra com pegada à largura dos ombros e incline o tronco com coluna neutra.",
+   "Puxe a barra em direção ao abdômen.",
+   "Desça controlando sem arredondar as costas."
+  ],
+  "dicas": [
+   "Mantenha os joelhos levemente flexionados.",
+   "Não use impulso do corpo.",
+   "Cuidado com a lombar; comece com cargas moderadas."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "rosca-direta": {
+  "principal": [
+   "Bíceps braquial"
+  ],
+  "secundario": [
+   "Braquial",
+   "Braquiorradial"
+  ],
+  "estabilizador": [
+   "Antebraço"
+  ],
+  "objetivo": "Trabalhar a força e o volume do bíceps com movimento de flexão do cotovelo.",
+  "execucao": [
+   "Segure a barra com as palmas para cima e os cotovelos junto ao corpo.",
+   "Flexione os cotovelos trazendo a barra até os ombros.",
+   "Desça devagar até estender quase por completo."
+  ],
+  "dicas": [
+   "Não balance o tronco.",
+   "Mantenha os cotovelos parados.",
+   "Controle a descida."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "rosca-banco-45": {
+  "principal": [
+   "Bíceps braquial (porção longa)"
+  ],
+  "secundario": [
+   "Braquial",
+   "Braquiorradial"
+  ],
+  "estabilizador": [
+   "Antebraço"
+  ],
+  "objetivo": "Alongar o bíceps em posição inclinada para maior amplitude.",
+  "execucao": [
+   "Sente no banco inclinado a 45 graus com os braços pendendo para baixo.",
+   "Flexione os cotovelos trazendo o halter em direção aos ombros.",
+   "Desça lentamente até sentir o alongamento."
+  ],
+  "dicas": [
+   "Mantenha as costas encostadas no banco.",
+   "Não tire os ombros do lugar.",
+   "Evite usar carga que obrigue a balançar."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "rosca-scott-maq": {
+  "principal": [
+   "Bíceps braquial"
+  ],
+  "secundario": [
+   "Braquial"
+  ],
+  "estabilizador": [
+   "Antebraço"
+  ],
+  "objetivo": "Isolar o bíceps com os braços apoiados, reduzindo o uso do corpo.",
+  "execucao": [
+   "Apoie os braços no apoio da máquina.",
+   "Flexione os cotovelos até quase fechar.",
+   "Desça devagar sem estender totalmente os cotovelos."
+  ],
+  "dicas": [
+   "Não levante os ombros.",
+   "Evite dobrar os cotovelos no final com força.",
+   "Controle a descida."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "rosca-martelo": {
+  "principal": [
+   "Braquial"
+  ],
+  "secundario": [
+   "Bíceps braquial",
+   "Braquiorradial"
+  ],
+  "estabilizador": [
+   "Antebraço"
+  ],
+  "objetivo": "Desenvolver braquial e braquiorradial com pegada neutra.",
+  "execucao": [
+   "Segure os halteres com as palmas voltadas uma para a outra.",
+   "Flexione os cotovelos trazendo o peso até os ombros.",
+   "Desça devagar."
+  ],
+  "dicas": [
+   "Mantenha os cotovelos junto ao corpo.",
+   "Não balance.",
+   "Controle a descida."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "flexora-sentada": {
+  "principal": [
+   "Posterior de coxa (bíceps femoral, semitendíneo e semimembranáceo)"
+  ],
+  "secundario": [
+   "Panturrilha",
+   "Glúteo máximo"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Fortalecer os músculos de trás da coxa com flexão do joelho.",
+  "execucao": [
+   "Sente com o encosto firme e ajuste o apoio logo acima dos tornozelos.",
+   "Flexione os joelhos trazendo o apoio para baixo.",
+   "Volte devagar, sem deixar a carga bater."
+  ],
+  "dicas": [
+   "Mantenha o quadril apoiado no assento.",
+   "Não use impulso.",
+   "Pausa curta na contração máxima."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "mesa-flexora": {
+  "principal": [
+   "Posterior de coxa"
+  ],
+  "secundario": [
+   "Panturrilha",
+   "Glúteo máximo"
+  ],
+  "estabilizador": [
+   "Core",
+   "Lombar"
+  ],
+  "objetivo": "Flexão do joelho deitado, com apoio firme do quadril.",
+  "execucao": [
+   "Deite de bruços com o apoio logo acima dos tornozelos.",
+   "Flexione os joelhos trazendo o apoio em direção aos glúteos.",
+   "Desça devagar sem deixar o quadril levantar."
+  ],
+  "dicas": [
+   "Mantenha o quadril colado no banco.",
+   "Não erga o quadril.",
+   "Controle a descida."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "stiff": {
+  "principal": [
+   "Posterior de coxa",
+   "Glúteo máximo"
+  ],
+  "secundario": [
+   "Lombar",
+   "Adutores"
+  ],
+  "estabilizador": [
+   "Antebraço",
+   "Core"
+  ],
+  "objetivo": "Alongar e fortalecer posterior de coxa e glúteos com movimento de quadril.",
+  "execucao": [
+   "Segure a barra com joelhos levemente flexionados.",
+   "Empurre os quadris para trás mantendo a coluna neutra.",
+   "Desça até sentir o alongamento na coxa e volte apertando os glúteos."
+  ],
+  "dicas": [
+   "Mantenha a barra colada nas pernas.",
+   "Não arredonde a coluna.",
+   "Não flexione demais os joelhos."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "desenv-maq": {
+  "principal": [
+   "Deltoide anterior",
+   "Deltoide lateral"
+  ],
+  "secundario": [
+   "Tríceps",
+   "Trapézio superior"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Trabalhar a força dos ombros com trajetória guiada.",
+  "execucao": [
+   "Ajuste o assento para as alças ficarem na altura dos ombros.",
+   "Empurre as alças para cima sem travar os cotovelos.",
+   "Desça devagar até a altura dos ombros."
+  ],
+  "dicas": [
+   "Mantenha as costas apoiadas.",
+   "Não arqueie a lombar.",
+   "Evite levantar o peso com impulso."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "elev-lateral-maq": {
+  "principal": [
+   "Deltoide lateral"
+  ],
+  "secundario": [
+   "Deltoide anterior",
+   "Trapézio superior"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Isolar o deltoide lateral para dar largura aos ombros.",
+  "execucao": [
+   "Ajuste a máquina e segure as alças com os cotovelos levemente flexionados.",
+   "Eleve os braços até a altura dos ombros.",
+   "Desça devagar, sem deixar a carga bater."
+  ],
+  "dicas": [
+   "Não suba acima da altura dos ombros.",
+   "Mantenha os ombros para baixo.",
+   "Controle a descida."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "elev-lateral-halter": {
+  "principal": [
+   "Deltoide lateral"
+  ],
+  "secundario": [
+   "Deltoide anterior",
+   "Trapézio superior"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Isolar o deltoide lateral com halteres, dando largura aos ombros.",
+  "execucao": [
+   "Segure os halteres ao lado do corpo, com leve flexão dos cotovelos.",
+   "Eleve os braços lateralmente até a altura dos ombros.",
+   "Desça devagar."
+  ],
+  "dicas": [
+   "Não suba acima da altura dos ombros.",
+   "Não use impulso.",
+   "Mantenha o punho um pouco abaixo do cotovelo."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "crucifixo-inverso-maq": {
+  "principal": [
+   "Deltoide posterior",
+   "Romboides"
+  ],
+  "secundario": [
+   "Trapézio médio"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Trabalhar a parte de trás dos ombros e a região entre as escápulas.",
+  "execucao": [
+   "Sente de frente para a máquina e segure as alças.",
+   "Abra os braços para trás, levando as escápulas para perto.",
+   "Volte devagar sem deixar o peso encostar."
+  ],
+  "dicas": [
+   "Mantenha o peito apoiado no apoio.",
+   "Não use impulso.",
+   "Controle o movimento."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "panturrilha-leg": {
+  "principal": [
+   "Gastrocnêmio"
+  ],
+  "secundario": [
+   "Sóleo"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Fortalecer a panturrilha com elevação dos calcanhares na máquina de pernas.",
+  "execucao": [
+   "Posicione os ombros sob o apoio e a ponta dos pés na plataforma.",
+   "Suba o máximo que conseguir, ficando na ponta dos pés.",
+   "Desça devagar até sentir o alongamento."
+  ],
+  "dicas": [
+   "Use amplitude completa.",
+   "Pausa de 1 segundo no topo.",
+   "Não tire os calcanhares do chão em excesso."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
+ "panturrilha-pe": {
+  "principal": [
+   "Gastrocnêmio"
+  ],
+  "secundario": [
+   "Sóleo"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Fortalecer a panturrilha em pé, com apoio.",
+  "execucao": [
+   "Fique em pé na plataforma, com os pés na largura dos quadris.",
+   "Suba o máximo que conseguir nos calcanhares.",
+   "Desça devagar até sentir alongar."
+  ],
+  "dicas": [
+   "Use amplitude completa.",
+   "Mantenha o corpo ereto.",
+   "Controle a descida."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ }
+}

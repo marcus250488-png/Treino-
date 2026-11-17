@@ -1,7 +1,7 @@
 name: treino_app
 description: Meu treino - Fase 2
 publish_to: none
-version: 1.7.3+21
+version: 1.8.0+23
 environment:
   sdk: '>=3.3.0 <4.0.0'
 dependencies:
@@ -25,6 +25,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/exercicios.json
+    - assets/anatomia.json
+    - assets/exercicios/
     - assets/fotos/
     - assets/nutri/
     - assets/nutricao.json
