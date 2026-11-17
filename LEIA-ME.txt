@@ -66,3 +66,7 @@ Esses módulos estão documentados no roadmap e dependem de decisões e serviço
 
 --- v1.7.2 ---
 * Novo ícone do app (Meu Treino).
+
+--- v1.7.3 ---
+* Botão "Adicionar 1 série" durante o exercício (vale só nesta execução).
+* Treino parcial: ao continuar, o app faz só os exercícios que faltam hoje, e o botão mostra quantos faltam.

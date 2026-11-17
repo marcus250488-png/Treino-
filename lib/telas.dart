@@ -1026,6 +1026,12 @@ class TreinoTela extends StatelessWidget {
         ? 'Último treino: ${fmtTempo(ultima.seg)} • ${ultima.series} séries • $kcal kcal'
         : 'Estimado: ~$min min • $series séries • ~$kcal kcal';
     final sessaoHoje = _sessaoDeHoje();
+    // Quantos exercícios ainda faltam hoje (treino parcial salvo).
+    final faltam = dia.itens
+        .where((i) =>
+            !app.feitoHojeEx(app.ex(i.exId)?.nome ?? i.nome, dia.nome))
+        .length;
+    final retomando = !feitoHoje && faltam > 0 && faltam < dia.itens.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -1114,7 +1120,11 @@ class TreinoTela extends StatelessWidget {
                                 builder: (_) => RunTela(dia: dia)),
                           ),
                   icon: const Icon(Icons.play_arrow_rounded),
-                  label: Text(eHoje ? 'Começar' : 'Começar • ~$min min'),
+                  label: Text(retomando
+                      ? 'Continuar • faltam $faltam'
+                      : eHoje
+                          ? 'Começar'
+                          : 'Começar • ~$min min'),
                 ),
         ),
       ),
@@ -1549,6 +1559,8 @@ class _RunEstado extends State<RunTela> {
   int get ei => _fila.first;
   int si = 0, seg = 0, descanso = 0, feitasSeries = 0;
   final Map<String, String> _rpeNome = {}; // nome do exercício -> Fácil/Ok/Pesado
+  final Map<int, int> _extra = {}; // séries a mais por exercício (só nesta execução)
+  int get seriesAtual => it.series + (_extra[ei] ?? 0);
   bool pausado = false;
   double volume = 0;
   late Timer _t;
@@ -1561,9 +1573,23 @@ class _RunEstado extends State<RunTela> {
   @override
   void initState() {
     super.initState();
+    // Fila: só os exercícios que ainda faltam hoje (se já houve treino parcial).
     final n = widget.dia.itens.length;
+    final todos = [for (var k = 0; k < n; k++) k];
+    final pend = [
+      for (final k in todos)
+        if (!app.feitoHojeEx(
+            app.ex(widget.dia.itens[k].exId)?.nome ?? widget.dia.itens[k].nome,
+            widget.dia.nome))
+          k
+    ];
+    var base = widget.livre || pend.isEmpty ? todos : pend;
     final ini = widget.inicio > 0 && widget.inicio < n ? widget.inicio : 0;
-    _fila = [for (var k = 0; k < n; k++) (ini + k) % n];
+    if (ini > 0 && !base.contains(ini)) base = [ini, ...base];
+    final pos = base.indexOf(ini);
+    _fila = pos > 0
+        ? [for (var k = 0; k < base.length; k++) base[(pos + k) % base.length]]
+        : base;
     _carregar();
     _t = Timer.periodic(const Duration(seconds: 1), (_) {
       if (pausado) return;
@@ -1591,14 +1617,14 @@ class _RunEstado extends State<RunTela> {
     volume += cg * repsMedio(it.reps);
     feitasSeries++;
     _cargasEx.add(cg);
-    if (si + 1 >= it.series) {
+    if (si + 1 >= seriesAtual) {
       resumo.add(_ResumoEx(app.ex(it.exId)?.nome ?? it.nome, it.grupo,
           it.reps, List<double>.from(_cargasEx)));
       _cargasEx.clear();
       await _perguntarRpe();
       if (!mounted) return;
     }
-    if (si + 1 < it.series) {
+    if (si + 1 < seriesAtual) {
       setState(() {
         si++;
         descanso = app.descanso;
@@ -1651,7 +1677,8 @@ class _RunEstado extends State<RunTela> {
 
   Future<void> _fim({bool parcial = false}) async {
     _t.cancel();
-    final total = widget.dia.itens.fold<int>(0, (s, e) => s + e.series);
+    final total = widget.dia.itens.fold<int>(0, (s, e) => s + e.series) +
+        _extra.values.fold<int>(0, (s, e) => s + e);
     // Exercício que ficou pela metade entra no resumo como parcial.
     if (_cargasEx.isNotEmpty) {
       resumo.add(_ResumoEx(app.ex(it.exId)?.nome ?? it.nome, it.grupo,
@@ -1827,7 +1854,7 @@ class _RunEstado extends State<RunTela> {
                   const SizedBox(height: 14),
                   Row(
                     children: List.generate(
-                      it.series,
+                      seriesAtual,
                       (i) => Expanded(
                         child: Container(
                           height: 8,
@@ -1861,6 +1888,15 @@ class _RunEstado extends State<RunTela> {
                   label: const Text('Pular para o próximo'),
                 ),
               ),
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: OutlinedButton.icon(
+                style: estiloContornoFino,
+                onPressed: () => setState(() => _extra[ei] = (_extra[ei] ?? 0) + 1),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Adicionar 1 série'),
+              ),
+            ),
             if (resumo.isNotEmpty) ...[
               const SizedBox(height: 20),
               Text('Resumo do treino', style: titulo(26)),
