@@ -2125,7 +2125,11 @@ class _BibEstado extends State<BibliotecaTela> {
             norm(e.grupo).contains(n) ||
             e.apelidos.any((a) => norm(a).contains(n)))
         .toList();
-    l.sort((a, b) => norm(a.nome).compareTo(norm(b.nome)));
+    // Ordena por grupo e depois por nome, para cada grupo ficar junto.
+    l.sort((a, b) {
+      final g = norm(a.grupo).compareTo(norm(b.grupo));
+      return g != 0 ? g : norm(a.nome).compareTo(norm(b.nome));
+    });
     return l;
   }
 
@@ -2216,8 +2220,9 @@ class _BibEstado extends State<BibliotecaTela> {
             final itens = <Object>[];
             String? grupoAtual;
             for (final e in lista) {
-              if (e.grupo != grupoAtual) {
-                grupoAtual = e.grupo;
+              final chave = norm(e.grupo);
+              if (chave != grupoAtual) {
+                grupoAtual = chave;
                 itens.add(e.grupo);
               }
               itens.add(e);
@@ -2266,7 +2271,16 @@ class _BibEstado extends State<BibliotecaTela> {
                       if (o is String) {
                         return Padding(
                           padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
-                          child: Text(o, style: titulo(22)),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: _AnelBrilho(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 6),
+                                child: Text(o, style: titulo(22)),
+                              ),
+                            ),
+                          ),
                         );
                       }
                       final e = o as Exercicio;

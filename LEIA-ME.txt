@@ -79,3 +79,7 @@ Esses módulos estão documentados no roadmap e dependem de decisões e serviço
 * Água: onda animada que sobe conforme a meta.
 * Biblioteca separada por grupo muscular, com 25 exercícios novos.
 * Tela de anatomia por exercício (músculos, objetivo, execução, dicas). A foto entra em assets/exercicios/<id>.jpg.
+
+--- v1.8.1 ---
+* Biblioteca: cada grupo aparece uma vez só, com nome em destaque animado.
+* Anatomia: desenho do corpo com os músculos destacados para todos os 55 exercícios. A foto entra em cima quando existir.

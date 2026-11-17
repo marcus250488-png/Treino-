@@ -1,40 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
+import 'corpo.dart';
 import 'state.dart';
 import 'telas.dart';
 
-const _corPrincipal = Color(0xFFE53935);
-const _corSecundario = Color(0xFFFB8C00);
-const _corEstab = Color(0xFF1E88E5);
-
-/// Tela de anatomia: foto do exercício em cima e, embaixo, os músculos,
-/// o objetivo, a execução e as dicas. A foto vem de assets/exercicios/<id>.jpg.
+/// Tela de anatomia: foto do exercício em cima (se existir), desenho do corpo
+/// com o músculo destacado, objetivo, execução, dicas e séries.
 class AnatomiaTela extends StatelessWidget {
   final Exercicio ex;
   const AnatomiaTela({super.key, required this.ex});
 
-  Widget _foto() => AspectRatio(
-        aspectRatio: 4 / 3,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: Image.asset(
-            'assets/exercicios/${ex.id}.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: branco(.06),
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.image_outlined, size: 56, color: branco(.35)),
-                  const SizedBox(height: 8),
-                  Text('Foto do exercício ainda não adicionada',
-                      style: TextStyle(color: branco(.5))),
-                ],
+  String get _caminhoFoto => 'assets/exercicios/${ex.id}.jpg';
+
+  /// Só mostra a foto quando ela existe em assets/exercicios/<id>.jpg.
+  Widget _foto() => FutureBuilder<ByteData>(
+        future: rootBundle.load(_caminhoFoto),
+        builder: (context, snap) {
+          if (!snap.hasData) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: AspectRatio(
+              aspectRatio: 4 / 3,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Image.asset(_caminhoFoto, fit: BoxFit.cover),
               ),
             ),
-          ),
-        ),
+          );
+        },
       );
 
   Widget _linhaMusculo(String t, Color c) => Padding(
@@ -85,6 +79,9 @@ class AnatomiaTela extends StatelessWidget {
           ),
       ];
 
+  List<String> _lista(Object? x) =>
+      [for (final m in (x as List? ?? const [])) m.toString()];
+
   @override
   Widget build(BuildContext context) {
     final a = app.anatomia[ex.id] as Map<String, dynamic>?;
@@ -101,12 +98,18 @@ class AnatomiaTela extends StatelessWidget {
             ])
           else ...[
             _secao('Músculos trabalhados', [
-              for (final m in (a['principal'] as List? ?? const []))
-                _linhaMusculo('$m (principal)', _corPrincipal),
-              for (final m in (a['secundario'] as List? ?? const []))
-                _linhaMusculo('$m (secundário)', _corSecundario),
-              for (final m in (a['estabilizador'] as List? ?? const []))
-                _linhaMusculo('$m (estabilizador)', _corEstab),
+              CorpoDiagrama(
+                principal: _lista(a['principal']),
+                secundario: _lista(a['secundario']),
+                estabilizador: _lista(a['estabilizador']),
+              ),
+              const SizedBox(height: 14),
+              for (final m in _lista(a['principal']))
+                _linhaMusculo('$m (principal)', const Color(0xFFE53935)),
+              for (final m in _lista(a['secundario']))
+                _linhaMusculo('$m (secundário)', const Color(0xFFFB8C00)),
+              for (final m in _lista(a['estabilizador']))
+                _linhaMusculo('$m (estabilizador)', const Color(0xFF1E88E5)),
             ]),
             _secao('Objetivo', [
               Text('${a['objetivo']}',
