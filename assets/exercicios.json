@@ -560,5 +560,14 @@
       "hiperextensão",
       "banco romano 45"
     ]
+  },
+  {
+    "id": "agachamento-hack",
+    "nome": "Agachamento hack",
+    "grupo": "Quadríceps",
+    "equip": "Máquina",
+    "apelidos": [
+      "hack squat"
+    ]
   }
 ]

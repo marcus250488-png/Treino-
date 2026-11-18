@@ -1521,5 +1521,31 @@
     "series": "3 a 4",
     "reps": "10 a 15",
     "descanso": "60 a 90s"
+  },
+  "agachamento-hack": {
+    "principal": [
+      "Quadríceps"
+    ],
+    "secundario": [
+      "Glúteo máximo",
+      "Adutores"
+    ],
+    "estabilizador": [
+      "Core / lombar"
+    ],
+    "objetivo": "Fortalecer as coxas com apoio nas costas, controlando a carga.",
+    "execucao": [
+      "Posicione os ombros sob os apoios e os pés na plataforma na largura dos ombros.",
+      "Solte a trava e desça flexionando os joelhos até uma profundidade confortável.",
+      "Empurre a plataforma com os calcanhares até estender os joelhos sem travar.",
+      "Mantenha as costas apoiadas durante todo o movimento."
+    ],
+    "dicas": [
+      "Não deixe os joelhos colapsarem para dentro.",
+      "Evite tirar o quadril do apoio no fim."
+    ],
+    "series": "3 a 4",
+    "reps": "10 a 15",
+    "descanso": "90s"
   }
 }
