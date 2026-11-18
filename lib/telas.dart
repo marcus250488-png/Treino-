@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart'
     show PdfDocument, PdfTextExtractor;
@@ -1717,9 +1718,13 @@ class _DetalheExEstado extends State<_DetalheEx> {
 class _ResumoEx {
   final String nome, grupo, reps;
   final List<double> cargas;
-  _ResumoEx(this.nome, this.grupo, this.reps, this.cargas);
+  final bool cresc; // última série foi "crescente" (3-4-5-6-7 = 25 reps)
+  _ResumoEx(this.nome, this.grupo, this.reps, this.cargas, {this.cresc = false});
 
-  String get texto {
+  String get texto =>
+      cresc ? '$_base • última crescente (25 reps)' : _base;
+
+  String get _base {
     final n = cargas.length;
     final s = n == 1 ? 'série' : 'séries';
     final usadas = cargas.where((c) => c > 0).toList();
@@ -1754,6 +1759,20 @@ class _RunEstado extends State<RunTela> {
   int get seriesAtual => it.series + (_extra[ei] ?? 0);
   bool pausado = false;
   double volume = 0;
+  // Série crescente: 3-4-5-6-7 reps com 15 s de pausa (total 25), só na última série.
+  static const _crescReps = [3, 4, 5, 6, 7];
+  bool _cresc = false;
+  int _crescEtapa = 0, _crescPausa = 0;
+  bool get _elegivelCresc {
+    final g = norm(app.ex(it.exId)?.grupo ?? it.grupo);
+    final n = norm(app.ex(it.exId)?.nome ?? it.nome);
+    return g.contains('biceps') ||
+        g.contains('triceps') ||
+        g.contains('ombro') ||
+        g.contains('antebraco') ||
+        n.contains('antebraco');
+  }
+
   late Timer _t;
   final _carga = TextEditingController();
   final List<_ResumoEx> resumo = [];
@@ -1787,6 +1806,10 @@ class _RunEstado extends State<RunTela> {
       setState(() {
         seg++;
         if (descanso > 0) descanso--;
+        if (_crescPausa > 0) {
+          _crescPausa--;
+          if (_crescPausa == 0) HapticFeedback.heavyImpact();
+        }
       });
     });
   }
@@ -1805,12 +1828,17 @@ class _RunEstado extends State<RunTela> {
     final cg = double.tryParse(_carga.text.trim().replaceAll(',', '.')) ?? 0;
     final recAtual = app.recorde(app.ex(it.exId)?.nome ?? it.nome);
     if (cg > 0 && recAtual != null && cg > recAtual) _recordes.add(it.exId);
-    volume += cg * repsMedio(it.reps);
+    final usouCresc = _cresc;
+    volume += cg * (usouCresc ? 25 : repsMedio(it.reps));
     feitasSeries++;
     _cargasEx.add(cg);
+    _cresc = false;
+    _crescEtapa = 0;
+    _crescPausa = 0;
     if (si + 1 >= seriesAtual) {
       resumo.add(_ResumoEx(app.ex(it.exId)?.nome ?? it.nome, it.grupo,
-          it.reps, List<double>.from(_cargasEx)));
+          it.reps, List<double>.from(_cargasEx),
+          cresc: usouCresc));
       _cargasEx.clear();
       await _perguntarRpe();
       if (!mounted) return;
@@ -1898,6 +1926,7 @@ class _RunEstado extends State<RunTela> {
             'reps': r.reps,
             'cargas': r.cargas,
             'rpe': _rpeNome[r.nome] ?? '',
+            if (r.cresc) 'cresc': true,
           },
       ],
     );
@@ -2059,7 +2088,9 @@ class _RunEstado extends State<RunTela> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  descanso > 0 ? _descansoW() : _serieW(),
+                  _cresc
+                      ? _crescW()
+                      : (descanso > 0 ? _descansoW() : _serieW()),
                 ],
               ),
             ),
@@ -2069,7 +2100,7 @@ class _RunEstado extends State<RunTela> {
                 child: Text('Próximo: ${prox.nome}',
                     style: const TextStyle(color: kMudo)),
               ),
-            if (si == 0 && _fila.length > 1)
+            if (si == 0 && _fila.length > 1 && !_cresc)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: OutlinedButton.icon(
@@ -2079,6 +2110,7 @@ class _RunEstado extends State<RunTela> {
                   label: const Text('Pular para o próximo'),
                 ),
               ),
+            if (!_cresc)
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: OutlinedButton.icon(
@@ -2171,11 +2203,117 @@ class _RunEstado extends State<RunTela> {
               exId: it.exId, nome: app.ex(it.exId)?.nome ?? it.nome),
         ),
         const SizedBox(height: 14),
+        if (si + 1 >= seriesAtual && _elegivelCresc) ...[
+          OutlinedButton.icon(
+            style: estiloContorno,
+            onPressed: () => setState(() {
+              _cresc = true;
+              _crescEtapa = 0;
+              _crescPausa = 0;
+            }),
+            icon: const Icon(Icons.stacked_line_chart),
+            label: const Text('Série crescente (3-4-5-6-7)'),
+          ),
+          const SizedBox(height: 10),
+        ],
         FilledButton.icon(
           style: estiloPrimario,
           onPressed: _concluir,
           icon: const Icon(Icons.check),
           label: const Text('Concluir série'),
+        ),
+      ],
+    );
+  }
+
+  void _crescAvanca() {
+    if (_crescEtapa < _crescReps.length - 1) {
+      setState(() {
+        _crescEtapa++;
+        _crescPausa = 15;
+      });
+    } else {
+      _concluir();
+    }
+  }
+
+  Widget _crescW() {
+    final ultima = _crescEtapa == _crescReps.length - 1;
+    if (_crescPausa > 0) {
+      return Column(
+        children: [
+          const Center(
+              child: Text('Pausa curta', style: TextStyle(color: kMudo))),
+          Center(child: Text('$_crescPausa', style: titulo(96))),
+          Center(
+              child: Text('Próxima: ${_crescReps[_crescEtapa]} repetições',
+                  style: const TextStyle(color: kMudo))),
+          const SizedBox(height: 14),
+          FilledButton(
+            style: estiloPrimario,
+            onPressed: () => setState(() => _crescPausa = 0),
+            child: const Text('Pular pausa'),
+          ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Série crescente • etapa ${_crescEtapa + 1} de ${_crescReps.length}',
+            style: titulo(26)),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${_crescReps[_crescEtapa]}', style: titulo(54)),
+                  const Text('Repetições (total 25)',
+                      style: TextStyle(color: kMudo)),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 140,
+              child: TextField(
+                controller: _carga,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                decoration: InputDecoration(
+                  labelText: 'Carga (kg)',
+                  filled: true,
+                  fillColor: branco(.08),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        FilledButton.icon(
+          style: estiloPrimario,
+          onPressed: _crescAvanca,
+          icon: const Icon(Icons.check),
+          label: Text(ultima
+              ? 'Concluir série crescente'
+              : 'Fiz as ${_crescReps[_crescEtapa]} reps'),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: TextButton(
+            onPressed: () => setState(() {
+              _cresc = false;
+              _crescEtapa = 0;
+              _crescPausa = 0;
+            }),
+            child: const Text('Cancelar e voltar à série normal'),
+          ),
         ),
       ],
     );

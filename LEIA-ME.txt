@@ -113,3 +113,5 @@ Esses módulos estão documentados no roadmap e dependem de decisões e serviço
 --- v1.11.2 ---
 * Vídeos com tamanho padrão (quadrado, recorte automático).
 * Novo vídeo: Elevação frontal na polia (elev-frontal-polia).
+
+v1.12.0: serie crescente (3-4-5-6-7 reps, 15 s de pausa, total 25) na ultima serie de exercicios de biceps, triceps, ombros e antebraco. Conta 25 reps no volume.
