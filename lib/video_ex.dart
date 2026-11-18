@@ -125,11 +125,12 @@ class _PlayerLoopEstado extends State<_PlayerLoop> {
       );
     }
     final tocando = _c.value.isPlaying;
+    // Tamanho padrão: quadrado, qualquer vídeo é recortado (cover) para caber.
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: widget.altura),
         child: AspectRatio(
-          aspectRatio: _c.value.aspectRatio,
+          aspectRatio: 1,
           child: GestureDetector(
             onTap: () => tocando ? _c.pause() : _c.play(),
             child: ClipRRect(
@@ -137,7 +138,15 @@ class _PlayerLoopEstado extends State<_PlayerLoop> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  VideoPlayer(_c),
+                  FittedBox(
+                    fit: BoxFit.cover,
+                    clipBehavior: Clip.hardEdge,
+                    child: SizedBox(
+                      width: _c.value.size.width,
+                      height: _c.value.size.height,
+                      child: VideoPlayer(_c),
+                    ),
+                  ),
                   if (!tocando)
                     Container(
                       color: Colors.black38,

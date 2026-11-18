@@ -109,3 +109,7 @@ Esses módulos estão documentados no roadmap e dependem de decisões e serviço
 --- v1.11.1 ---
 * Segundo vídeo de execução: Elevação lateral na polia (elev-lateral-polia), na folha do exercício e na execução.
 * Exercício do treino sem id de vídeo passa a procurar vídeo pelo nome na biblioteca.
+
+--- v1.11.2 ---
+* Vídeos com tamanho padrão (quadrado, recorte automático).
+* Novo vídeo: Elevação frontal na polia (elev-frontal-polia).

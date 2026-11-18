@@ -1056,6 +1056,31 @@
   "reps": "10 a 15",
   "descanso": "60 a 90s"
  },
+ "elev-frontal-polia": {
+  "principal": [
+   "Deltoide anterior"
+  ],
+  "secundario": [
+   "Peitoral maior (porção clavicular)"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Trabalhar o deltoide anterior na polia, com tensão constante.",
+  "execucao": [
+   "Segure os halteres à frente das coxas, palmas para baixo.",
+   "Eleve os braços até a altura dos ombros.",
+   "Desça devagar."
+  ],
+  "dicas": [
+   "Não suba acima da altura dos ombros.",
+   "Não use impulso.",
+   "Controle a descida."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
  "crucifixo-inverso-halter": {
   "principal": [
    "Deltoide posterior",

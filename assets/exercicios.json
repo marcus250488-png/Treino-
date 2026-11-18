@@ -391,6 +391,16 @@
   ]
  },
  {
+  "id": "elev-frontal-polia",
+  "nome": "Elevação frontal na polia",
+  "grupo": "Ombros",
+  "equip": "Polia",
+  "apelidos": [
+   "elevacao frontal polia",
+   "elevacao frontal cabo"
+  ]
+ },
+ {
   "id": "crucifixo-inverso-halter",
   "nome": "Crucifixo inverso com halteres",
   "grupo": "Ombros",
