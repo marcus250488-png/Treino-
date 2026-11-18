@@ -1048,7 +1048,7 @@ class MeuPlanoTela extends StatelessWidget {
             IconButton(
               tooltip: 'Abrir treino',
               visualDensity: VisualDensity.compact,
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TreinoTela(dia: treino))),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TreinoTela(dia: treino, data: data))),
               icon: const Icon(Icons.play_circle_fill_rounded, color: kAzul, size: 25),
             )
           else

@@ -35,7 +35,7 @@ List<Aviso> gerarAvisos() {
       'Treino de hoje',
       '${treino.nome}${treino.foco.isEmpty ? '' : ' • ${treino.foco}'}. Bora treinar?',
       urgente: true,
-      destino: () => TreinoTela(dia: treino),
+      destino: () => TreinoTela(dia: treino, data: hoje),
     ));
   } else if (feito) {
     out.add(const Aviso(Icons.check_circle_outline, 'Treino concluído',

@@ -66,9 +66,54 @@ class _ShellEstado extends State<Shell> {
   @override
   void initState() {
     super.initState();
+    app.xpAviso.addListener(_aoXp);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) pedirPermissoesInicial(context);
     });
+  }
+
+  @override
+  void dispose() {
+    app.xpAviso.removeListener(_aoXp);
+    super.dispose();
+  }
+
+  /// Aviso rápido quando o app dá XP (e quando sobe de nível).
+  void _aoXp() {
+    final a = app.xpAviso.value;
+    if (a == null || !mounted) return;
+    final m = ScaffoldMessenger.of(context);
+    m.hideCurrentSnackBar();
+    m.showSnackBar(SnackBar(
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 110),
+      backgroundColor: kSuperf,
+      duration: const Duration(seconds: 3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: branco(.14)),
+      ),
+      content: Row(
+        children: [
+          const Icon(Icons.bolt, color: kAzul),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(a.texto,
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600)),
+                if (a.extra != null)
+                  Text(a.extra!,
+                      style: const TextStyle(color: kMudo, fontSize: 13)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ));
   }
 
   void _ir(int n) => setState(() => i = n);

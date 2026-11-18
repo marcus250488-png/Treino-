@@ -12,6 +12,7 @@ import 'fotos.dart';
 import 'cardio.dart';
 import 'ex_edit.dart';
 import 'passos.dart';
+import 'xp.dart';
 import 'desempenho.dart' show DesempenhoTela;
 import 'sessao_detalhe.dart';
 import 'compartilhar.dart';
@@ -39,6 +40,17 @@ final estiloContornoFino = OutlinedButton.styleFrom(
   shape: const StadiumBorder(),
   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
   textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+);
+
+/// Contorno leve, menor e com fonte pequena (botões secundários discretos).
+final estiloContornoMini = OutlinedButton.styleFrom(
+  foregroundColor: Colors.white.withOpacity(0.9),
+  side: BorderSide(color: Colors.white.withOpacity(0.28), width: 1),
+  shape: const StadiumBorder(),
+  minimumSize: const Size(0, 34),
+  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
 );
 
 final estiloContorno = OutlinedButton.styleFrom(
@@ -577,6 +589,8 @@ class _InicioEstado extends State<InicioTela> {
               const SizedBox(height: 14),
               const PassosCard(),
               const SizedBox(height: 14),
+              const XpCard(),
+              const SizedBox(height: 14),
               Material(
                 color: branco(.07),
                 borderRadius: BorderRadius.circular(22),
@@ -878,6 +892,17 @@ class _InicioEstado extends State<InicioTela> {
               style: const TextStyle(color: kAzul),
             ),
           ),
+        if (app.ajustes[chaveData(data)] == 'R' &&
+            !DateUtils.dateOnly(data).isBefore(DateUtils.dateOnly(DateTime.now())))
+          Padding(
+            padding: const EdgeInsets.only(top: 14),
+            child: OutlinedButton.icon(
+              style: estiloContornoMini,
+              onPressed: () => app.desfazerAjustesDesde(data),
+              icon: const Icon(Icons.undo, size: 16),
+              label: const Text('Voltar o treino para este dia'),
+            ),
+          ),
         const SizedBox(height: 18),
         _linhaCardio(context, data),
       ],
@@ -897,11 +922,18 @@ class _InicioEstado extends State<InicioTela> {
           children: [
             Positioned.fill(
               child: Image.asset(
-                'assets/fotos/descanso.jpg',
+                app.fotosFemininas
+                    ? 'assets/fotos/f_descanso.jpg'
+                    : 'assets/fotos/descanso.jpg',
                 fit: BoxFit.cover,
                 alignment: const Alignment(0, -0.35),
                 gaplessPlayback: true,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                errorBuilder: (_, __, ___) => Image.asset(
+                  'assets/fotos/descanso.jpg',
+                  fit: BoxFit.cover,
+                  alignment: const Alignment(0, -0.35),
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
               ),
             ),
             const Positioned.fill(
@@ -954,7 +986,7 @@ class _InicioEstado extends State<InicioTela> {
           child: Text(rotulo),
         ),
         const SizedBox(height: 10),
-        Text(dia.nome, style: titulo(46), textAlign: TextAlign.center),
+        Text(_nomeDia(data), style: titulo(46), textAlign: TextAlign.center),
         if (dia.foco.isNotEmpty)
           Text(dia.foco,
               textAlign: TextAlign.center,
@@ -985,7 +1017,8 @@ class _InicioEstado extends State<InicioTela> {
           style: estiloPrimario,
           onPressed: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => TreinoTela(dia: dia)),
+            MaterialPageRoute(
+                builder: (_) => TreinoTela(dia: dia, data: data)),
           ),
           child: Text(eHoje ? 'Iniciar treino' : 'Ver treino'),
         ),
@@ -1065,7 +1098,9 @@ String _nomeDia(DateTime d) => _diasLongos[d.weekday % 7];
 // ---------- Detalhe do treino ----------
 class TreinoTela extends StatelessWidget {
   final Dia dia;
-  const TreinoTela({super.key, required this.dia});
+  /// Data em que este treino cai (com os ajustes de "não fui treinar").
+  final DateTime? data;
+  const TreinoTela({super.key, required this.dia, this.data});
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -1090,7 +1125,9 @@ class TreinoTela extends StatelessWidget {
 
   Widget _corpo(BuildContext context) {
     final hoje = DateTime.now();
-    final eHoje = dia.weekday == hoje.weekday;
+    final eHoje = data != null
+        ? DateUtils.isSameDay(data, hoje)
+        : app.eTreinoDeHoje(dia);
     final feitoHoje = app.feitos.contains(chaveData(hoje));
     final series = dia.itens.fold<int>(0, (s, e) => s + e.series);
     final ultima = app.ultimaSessaoDoDia(dia);
@@ -1113,7 +1150,7 @@ class TreinoTela extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(dia.nome, style: titulo(28)),
+        title: Text(data != null ? _nomeDia(data!) : dia.nome, style: titulo(28)),
         actions: [
           IconButton(
             tooltip: 'Editar treino (trocar e reordenar)',
@@ -1188,7 +1225,19 @@ class TreinoTela extends StatelessWidget {
                     ),
                   ],
                 )
-              : FilledButton.icon(
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (eHoje && app.eTreinoDeHoje(dia)) ...[
+                      OutlinedButton.icon(
+                        style: estiloContornoMini,
+                        onPressed: () => _naoFui(context),
+                        icon: const Icon(Icons.bedtime_outlined, size: 16),
+                        label: const Text('Não fui treinar hoje'),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    FilledButton.icon(
                   style: estiloPrimario,
                   onPressed: dia.itens.isEmpty
                       ? null
@@ -1204,9 +1253,46 @@ class TreinoTela extends StatelessWidget {
                           ? 'Começar'
                           : 'Começar • ~$min min'),
                 ),
+                  ],
+                ),
         ),
       ),
     );
+  }
+
+  /// Confirma, empurra o treino (e os próximos) um dia para frente e avisa.
+  Future<void> _naoFui(BuildContext context) async {
+    final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final hoje = DateTime.now();
+    final amanha = DateTime(hoje.year, hoje.month, hoje.day + 1);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Não foi treinar hoje?'),
+        content: Text(
+            'Hoje vira dia de descanso e o treino de hoje vai para ${_nomeDia(amanha).toLowerCase()}. Os treinos seguintes também avançam um dia, até cair num dia livre.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Confirmar')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final antes = await app.naoFuiTreinar(hoje);
+    nav.pop();
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(
+      content: Text('Hoje é descanso. Treino movido para ${_nomeDia(amanha).toLowerCase()}.'),
+      action: SnackBarAction(
+        label: 'Desfazer',
+        onPressed: () => app.restaurarAjustes(antes),
+      ),
+    ));
   }
 
   /// Topo com a foto do dia (mesma do card da tela inicial) e o resumo.
@@ -1565,7 +1651,7 @@ class _DetalheExEstado extends State<_DetalheEx> {
                 icon: const Icon(Icons.play_arrow_rounded),
                 label: const Text('Começar daqui'),
               ),
-              if (widget.dia!.weekday == DateTime.now().weekday) ...[
+              if (app.eTreinoDeHoje(widget.dia!)) ...[
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(

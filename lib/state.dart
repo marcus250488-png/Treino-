@@ -336,10 +336,54 @@ class Sugestao {
   const Sugestao(this.carga, this.subir);
 }
 
+// ---------- XP: valores e níveis ----------
+const int kXpTreino = 100;
+const int kXpCardio = 60;
+const int kXpMissao = 150;
+const int kXpPassos = 50;
+const int kXpAgua = 20;
+const int kXpPeso = 15;
+const int kMissaoTreinos = 3;
+const List<int> kXpCaixa = [100, 150, 200, 250, 300, 350, 500];
+
+/// XP para sair do nível [n] e ir ao próximo: 160, 280, 400, 520...
+int xpParaProximo(int n) => 160 + 120 * (n - 1);
+
+/// Devolve [nível, XP dentro do nível, XP que o nível pede].
+List<int> nivelDoXp(int total) {
+  var n = 1;
+  var r = total < 0 ? 0 : total;
+  while (r >= xpParaProximo(n)) {
+    r -= xpParaProximo(n);
+    n++;
+  }
+  return [n, r, xpParaProximo(n)];
+}
+
+class XpAviso {
+  final String texto;
+  final String? extra;
+  XpAviso(this.texto, this.extra);
+}
+
+class NumberFormatBr {
+  static String milhar(int v) {
+    final s = v.toString();
+    final b = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
+      b.write(s[i]);
+    }
+    return b.toString();
+  }
+}
+
 class AppState extends ChangeNotifier {
   List<Exercicio> lib = [];
   List<Exercicio> _base = [];
   List<Dia> plano = [];
+  /// Ajustes por data (não fui treinar): 'R' = descanso, número = treino (weekday do plano) que caiu nesse dia.
+  Map<String, String> ajustes = {};
   DateTime? inicioPlano;
   Set<String> feitos = {};
   Map<String, String> cargas = {};
@@ -347,6 +391,13 @@ class AppState extends ChangeNotifier {
   List<Sessao> sessoes = [];
   List<Avaliacao> avaliacoes = [];
   Map<String, int> agua = {};
+  // XP / premiação: cada item é {id, ts, tipo, titulo, sub, xp}
+  List<Map<String, dynamic>> xpLog = [];
+  final ValueNotifier<XpAviso?> xpAviso = ValueNotifier<XpAviso?>(null);
+  int _avisoXp = 0;
+  final List<String> _avisoTitulos = [];
+  int? _nivelAntesAviso;
+  String? _passosXpDia;
   int metaAgua = 2500;
   double? metaPeso;
   int descanso = 75;
@@ -551,6 +602,8 @@ class AppState extends ChangeNotifier {
         'cardapio': _p.getString(_k('cardapio')),
         'passos': _p.getString(_k('passos')),
         'passos_meta': _p.getInt(_k('passos_meta')),
+        'xp': _p.getString(_k('xp')),
+        'ajustes': _p.getString(_k('ajustes')),
       };
 
   Map<String, dynamic> _empacotar() => {
@@ -576,6 +629,8 @@ class AppState extends ChangeNotifier {
         'cardapio': jsonEncode(cardapio),
         'passos': jsonEncode(passos),
         'passos_meta': metaPassos,
+        'xp': jsonEncode(xpLog),
+        'ajustes': jsonEncode(ajustes),
         'atualizado_em': DateTime.now().toIso8601String(),
       };
 
@@ -599,6 +654,16 @@ class AppState extends ChangeNotifier {
     passos = Map<String, int>.from(
         _mapa(d['passos']).map((k, v) => MapEntry('$k', (v as num).toInt())));
     metaPassos = (d['passos_meta'] as num?)?.toInt() ?? 10000;
+    ajustes = {};
+    final ajRaw = d['ajustes'];
+    if (ajRaw is String && ajRaw.isNotEmpty) {
+      try {
+        (jsonDecode(ajRaw) as Map).forEach((k, v) => ajustes['$k'] = '$v');
+      } catch (_) {}
+    }
+    xpLog = _lista(d['xp'])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
     passosHoje.value = passos[chaveData(DateTime.now())] ?? 0;
     lib = [
       ..._base.map(_comOverEx),
@@ -670,6 +735,8 @@ class AppState extends ChangeNotifier {
     await _p.setString(_k('cardapio'), m['cardapio'] as String);
     await _p.setString(_k('passos'), m['passos'] as String);
     await _p.setInt(_k('passos_meta'), metaPassos);
+    await _p.setString(_k('xp'), m['xp'] as String);
+    await _p.setString(_k('ajustes'), m['ajustes'] as String);
   }
 
   // ---------- Nuvem ----------
@@ -789,6 +856,15 @@ class AppState extends ChangeNotifier {
                 id: it.exId, nome: it.nome, grupo: it.grupo, custom: true));
           }
         }
+      }
+      if (m['ajustes'] is Map) {
+        ajustes = {};
+        (m['ajustes'] as Map).forEach((k, v) => ajustes['$k'] = '$v');
+      }
+      if (m['xp'] is List) {
+        xpLog = (m['xp'] as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
       }
       if (m['perfil'] is Map) {
         perfil = Map<String, dynamic>.from(m['perfil'] as Map);
@@ -1218,6 +1294,10 @@ class AppState extends ChangeNotifier {
     _ultimoTotal = total;
     if (delta > 0) passos[k] = (passos[k] ?? 0) + delta;
     passosHoje.value = passos[k] ?? 0;
+    if (metaPassos > 0 && (passos[k] ?? 0) >= metaPassos && _passosXpDia != k) {
+      _passosXpDia = k;
+      unawaited(_xpPassos(k));
+    }
     _timerPassos?.cancel();
     _timerPassos = Timer(const Duration(seconds: 30), _salvarPassos);
   }
@@ -1265,8 +1345,69 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
+  Future<void> _salvarAjustes() async {
+    final lim = DateTime.now().subtract(const Duration(days: 45));
+    ajustes.removeWhere((k, _) {
+      final d = dataDaChave(k);
+      return d != null && d.isBefore(lim);
+    });
+    await _p.setString(_k('ajustes'), jsonEncode(ajustes));
+  }
+
+  /// "Não fui treinar": o dia vira descanso e o treino dele vai para o dia
+  /// seguinte. Se o dia seguinte já tinha treino, esse também avança, e assim
+  /// por diante, até cair num dia livre. Devolve o estado anterior (para desfazer).
+  Future<Map<String, String>> naoFuiTreinar(DateTime d) async {
+    final antes = Map<String, String>.from(ajustes);
+    final base = DateTime(d.year, d.month, d.day);
+    var carga = treinoNo(base);
+    if (carga == null) return antes;
+    final novos = <String, String>{chaveData(base): 'R'};
+    for (var i = 1; i <= 14; i++) {
+      final dia = DateTime(base.year, base.month, base.day + i);
+      final ocupante = treinoNo(dia);
+      novos[chaveData(dia)] = '${carga!.weekday}';
+      if (ocupante == null) break;
+      carga = ocupante;
+    }
+    ajustes.addAll(novos);
+    await _salvarAjustes();
+    notifyListeners();
+    return antes;
+  }
+
+  Future<void> restaurarAjustes(Map<String, String> antes) async {
+    ajustes = Map<String, String>.from(antes);
+    await _salvarAjustes();
+    notifyListeners();
+  }
+
+  /// Volta ao plano normal a partir de [d] (inclusive).
+  Future<void> desfazerAjustesDesde(DateTime d) async {
+    final base = DateTime(d.year, d.month, d.day);
+    ajustes.removeWhere((k, _) {
+      final x = dataDaChave(k);
+      return x != null && !x.isBefore(base);
+    });
+    await _salvarAjustes();
+    notifyListeners();
+  }
+
+  /// O treino [dia] é o treino de hoje (já considerando os ajustes)?
+  bool eTreinoDeHoje(Dia dia) =>
+      treinoNo(DateTime.now())?.weekday == dia.weekday;
+
   /// Treino exatamente do dia da semana de [d] (null = dia de descanso).
   Dia? treinoNo(DateTime d) {
+    final aj = ajustes[chaveData(d)];
+    if (aj != null) {
+      if (aj == 'R') return null;
+      final w = int.tryParse(aj);
+      for (final x in plano) {
+        if (x.weekday == w) return x;
+      }
+      return null;
+    }
     for (final x in plano) {
       if (x.weekday == d.weekday) return x;
     }
@@ -1310,6 +1451,8 @@ class AppState extends ChangeNotifier {
   Future<void> salvarPlano(List<Dia> dias) async {
     await _garantirInicio();
     plano = dias;
+    ajustes.clear();
+    await _salvarAjustes();
     await atualizarPlano();
   }
 
@@ -1360,6 +1503,7 @@ class AppState extends ChangeNotifier {
         await _p.setStringList(_k('feitos'), feitos.toList());
       }
     }
+    if (dt != null) await _xpRevisarDia(dt);
     notifyListeners();
   }
 
@@ -1410,6 +1554,7 @@ class AppState extends ChangeNotifier {
     sessoes.add(s);
     await _p.setString(
         _k('sessoes'), jsonEncode(sessoes.map((e) => e.toJson()).toList()));
+    if (s.completo) await _xpDaSessao(s);
     notifyListeners();
   }
 
@@ -1417,6 +1562,11 @@ class AppState extends ChangeNotifier {
     avaliacoes.add(Avaliacao(data: DateTime.now().toIso8601String(), v: v));
     await _p.setString(_k('avaliacoes'),
         jsonEncode(avaliacoes.map((e) => e.toJson()).toList()));
+    if (v['peso'] != null) {
+      _xpAdd('peso:${chaveData(DateTime.now())}', 'peso', 'Peso atualizado',
+          kXpPeso);
+      await _xpFechar();
+    }
     notifyListeners();
   }
 
@@ -1437,7 +1587,163 @@ class AppState extends ChangeNotifier {
     final novo = (agua[k] ?? 0) + ml;
     agua[k] = novo < 0 ? 0 : novo;
     await _p.setString(_k('agua'), jsonEncode(agua));
+    if (ml > 0 && k == chaveData(DateTime.now())) {
+      _xpAdd('agua:$k', 'agua', 'Hidratação registrada', kXpAgua);
+      await _xpFechar();
+    }
     notifyListeners();
+  }
+
+  // ---------- XP e premiação ----------
+  int get xpTotal =>
+      xpLog.fold<int>(0, (t, e) => t + ((e['xp'] as num?)?.toInt() ?? 0));
+
+  Future<void> _salvarXp() async {
+    await _p.setString(_k('xp'), jsonEncode(xpLog));
+  }
+
+  /// Soma XP uma única vez por [id]. Devolve true se ganhou agora.
+  bool _xpAdd(String id, String tipo, String titulo, int xp,
+      {String sub = ''}) {
+    if (xpLog.any((e) => e['id'] == id)) return false;
+    _nivelAntesAviso ??= nivelDoXp(xpTotal)[0];
+    xpLog.add({
+      'id': id,
+      'ts': DateTime.now().toIso8601String(),
+      'tipo': tipo,
+      'titulo': titulo,
+      'sub': sub,
+      'xp': xp,
+    });
+    _avisoXp += xp;
+    _avisoTitulos.add(titulo);
+    return true;
+  }
+
+  /// Grava o XP novo e avisa na tela (uma mensagem só por lote).
+  Future<void> _xpFechar({bool avisar = true}) async {
+    await _salvarXp();
+    final antes = _nivelAntesAviso;
+    final xp = _avisoXp;
+    final titulos = List<String>.from(_avisoTitulos);
+    _avisoXp = 0;
+    _avisoTitulos.clear();
+    _nivelAntesAviso = null;
+    if (!avisar || xp <= 0) return;
+    final depois = nivelDoXp(xpTotal)[0];
+    final subiu = antes != null && depois > antes;
+    xpAviso.value = XpAviso(
+      '+$xp XP · ${titulos.join(', ')}',
+      subiu ? 'Você subiu para o Nível $depois!' : null,
+    );
+  }
+
+  Future<void> _xpDaSessao(Sessao s) async {
+    final dt = DateTime.tryParse(s.data) ?? DateTime.now();
+    final k = chaveData(dt);
+    if (s.cardio) {
+      _xpAdd('cardio:$k', 'cardio', 'Cardio concluído', kXpCardio,
+          sub: s.modalidade ?? '');
+    } else {
+      _xpAdd('treino:$k', 'treino', 'Treino concluído', kXpTreino,
+          sub: s.livre ? 'Treino livre' : s.dia);
+      _xpMissao(dt);
+    }
+    await _xpFechar();
+  }
+
+  /// Dias diferentes da semana (domingo a sábado) com treino de musculação concluído.
+  int treinosNaSemana([DateTime? ref]) {
+    final r = ref ?? DateTime.now();
+    final dom = DateTime(r.year, r.month, r.day - (r.weekday % 7));
+    final dias = <String>{};
+    for (final s in sessoes) {
+      if (!s.completo || s.cardio) continue;
+      final d = DateTime.tryParse(s.data);
+      if (d == null) continue;
+      final dd = DateTime(d.year, d.month, d.day);
+      if (!dd.isBefore(dom) && dd.isBefore(DateTime(dom.year, dom.month, dom.day + 7))) {
+        dias.add(chaveData(dd));
+      }
+    }
+    return dias.length;
+  }
+
+  bool get missaoSemanalFeita {
+    final n = DateTime.now();
+    final dom = DateTime(n.year, n.month, n.day - (n.weekday % 7));
+    return xpLog.any((e) => e['id'] == 'missao:${chaveData(dom)}');
+  }
+
+  void _xpMissao(DateTime dt) {
+    if (treinosNaSemana(dt) < kMissaoTreinos) return;
+    final dom = DateTime(dt.year, dt.month, dt.day - (dt.weekday % 7));
+    _xpAdd('missao:${chaveData(dom)}', 'missao', 'Missão semanal concluída',
+        kXpMissao,
+        sub: 'Treine ${kMissaoTreinos}x esta semana');
+  }
+
+  /// Depois de excluir um treino: tira o XP do dia se não sobrou nenhum.
+  Future<void> _xpRevisarDia(DateTime dt) async {
+    final k = chaveData(dt);
+    bool tem(bool cardio) => sessoes.any((x) {
+          final d = DateTime.tryParse(x.data);
+          return d != null &&
+              x.completo &&
+              x.cardio == cardio &&
+              chaveData(d) == k;
+        });
+    final antes = xpLog.length;
+    if (!tem(false)) xpLog.removeWhere((e) => e['id'] == 'treino:$k');
+    if (!tem(true)) xpLog.removeWhere((e) => e['id'] == 'cardio:$k');
+    if (xpLog.length != antes) await _salvarXp();
+  }
+
+  Future<void> _xpPassos(String k) async {
+    final n = NumberFormatBr.milhar(metaPassos);
+    if (_xpAdd('passos:$k', 'passos', 'Meta de passos batida', kXpPassos,
+        sub: '$n passos')) {
+      await _xpFechar();
+      notifyListeners();
+    }
+  }
+
+  // Caixa do dia: uma por dia; o prêmio cresce com a sequência de dias seguidos.
+  bool get caixaDisponivel =>
+      !xpLog.any((e) => e['id'] == 'caixa:${chaveData(DateTime.now())}');
+
+  int get _seqCaixa {
+    final dias = xpLog
+        .where((e) => e['tipo'] == 'caixa')
+        .map((e) => '${e['id']}'.substring(6))
+        .toSet();
+    final n = DateTime.now();
+    var d = DateTime(n.year, n.month, n.day);
+    if (!dias.contains(chaveData(d))) d = DateTime(d.year, d.month, d.day - 1);
+    var c = 0;
+    while (dias.contains(chaveData(d))) {
+      c++;
+      d = DateTime(d.year, d.month, d.day - 1);
+    }
+    return c;
+  }
+
+  /// Número do dia da sequência da caixa de hoje (1, 2, 3...).
+  int get diaDaCaixa => caixaDisponivel ? _seqCaixa + 1 : _seqCaixa;
+
+  int premioDaCaixa(int dia) => kXpCaixa[(dia - 1) % kXpCaixa.length];
+
+  /// Abre a caixa de hoje. Devolve o XP ganho (0 se já foi aberta).
+  Future<int> abrirCaixa() async {
+    if (!caixaDisponivel) return 0;
+    final dia = diaDaCaixa;
+    final xp = premioDaCaixa(dia);
+    _xpAdd('caixa:${chaveData(DateTime.now())}', 'caixa', 'Recompensa diária',
+        xp,
+        sub: 'Dia $dia · caixa do dia');
+    await _xpFechar(avisar: false);
+    notifyListeners();
+    return xp;
   }
 
   String exportar() => JsonEncoder.withIndent('  ').convert({
@@ -1453,6 +1759,8 @@ class AppState extends ChangeNotifier {
         'cargas': cargas,
         'observacoes': obs,
         'dias_concluidos': feitos.toList(),
+        'xp': xpLog,
+        'ajustes': ajustes,
         'perfil': perfil,
         'diario': diario,
         'cardapio': cardapio,
