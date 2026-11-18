@@ -13,6 +13,7 @@ import 'cardio.dart';
 import 'ex_edit.dart';
 import 'passos.dart';
 import 'xp.dart';
+import 'video_ex.dart';
 import 'desempenho.dart' show DesempenhoTela;
 import 'sessao_detalhe.dart';
 import 'compartilhar.dart';
@@ -1589,6 +1590,10 @@ class _DetalheExEstado extends State<_DetalheEx> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            VideoExercicio(
+                exId: it.exId,
+                nome: ex?.nome ?? it.nome,
+                abaixo: 16),
             Text(ex?.nome ?? it.nome, style: titulo(30)),
             const SizedBox(height: 6),
             Text(equip.isEmpty ? it.grupo : '${it.grupo} • $equip',
@@ -2151,7 +2156,13 @@ class _RunEstado extends State<RunTela> {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: BotaoVerExecucao(
+              exId: it.exId, nome: app.ex(it.exId)?.nome ?? it.nome),
+        ),
+        const SizedBox(height: 14),
         FilledButton.icon(
           style: estiloPrimario,
           onPressed: _concluir,

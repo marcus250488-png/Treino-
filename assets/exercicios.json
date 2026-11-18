@@ -265,6 +265,17 @@
   ]
  },
  {
+  "id": "elev-lateral-polia",
+  "nome": "Elevação lateral na polia",
+  "grupo": "Ombros",
+  "equip": "Polia",
+  "apelidos": [
+   "elevacao lateral polia",
+   "elevacao lateral cabo",
+   "elevacao lateral crossover"
+  ]
+ },
+ {
   "id": "crucifixo-inverso-maq",
   "nome": "Crucifixo inverso na máquina",
   "grupo": "Ombros",

@@ -715,6 +715,32 @@
   "reps": "10 a 15",
   "descanso": "60 a 90s"
  },
+ "elev-lateral-polia": {
+  "principal": [
+   "Deltoide lateral"
+  ],
+  "secundario": [
+   "Deltoide anterior",
+   "Trapézio superior"
+  ],
+  "estabilizador": [
+   "Core"
+  ],
+  "objetivo": "Isolar o deltoide lateral na polia, com tensão constante durante todo o movimento.",
+  "execucao": [
+   "Fique de lado para a polia baixa e segure o cabo com a mão mais distante.",
+   "Com leve flexão do cotovelo, eleve o braço lateralmente até a altura do ombro.",
+   "Desça devagar, mantendo o cabo sob tensão."
+  ],
+  "dicas": [
+   "Não suba acima da altura dos ombros.",
+   "Não use impulso do tronco.",
+   "Mantenha o punho um pouco abaixo do cotovelo."
+  ],
+  "series": "3 a 4",
+  "reps": "10 a 15",
+  "descanso": "60 a 90s"
+ },
  "crucifixo-inverso-maq": {
   "principal": [
    "Deltoide posterior",
