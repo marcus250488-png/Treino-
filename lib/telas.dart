@@ -2205,7 +2205,8 @@ class _RunEstado extends State<RunTela> {
         const SizedBox(height: 14),
         if (si + 1 >= seriesAtual && _elegivelCresc) ...[
           OutlinedButton.icon(
-            style: estiloContorno,
+            style: estiloContornoFino.merge(
+                OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48))),
             onPressed: () => setState(() {
               _cresc = true;
               _crescEtapa = 0;
