@@ -569,5 +569,15 @@
     "apelidos": [
       "hack squat"
     ]
+  },
+  {
+    "id": "antebraco",
+    "nome": "Antebraço",
+    "grupo": "Antebraço",
+    "equip": "Polia",
+    "apelidos": [
+      "rosca de punho",
+      "antebraço polia"
+    ]
   }
 ]

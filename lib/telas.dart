@@ -354,7 +354,7 @@ class _InicioEstado extends State<InicioTela> {
   @override
   void initState() {
     super.initState();
-    _sel = DateTime.now().weekday % 7;
+    _sel = 3; // hoje fica no meio da barra (índice 3 de 0..6)
     _pc = PageController(initialPage: _sel, viewportFraction: 0.94);
   }
 
@@ -451,13 +451,18 @@ class _InicioEstado extends State<InicioTela> {
       listenable: app,
       builder: (context, _) {
         final hoje = DateTime.now();
-        final domingo = DateTime(hoje.year, hoje.month, hoje.day)
+        final hojeZero = DateTime(hoje.year, hoje.month, hoje.day);
+        // Barra centrada em hoje: 3 dias antes, hoje, 3 dias depois.
+        final semana = List.generate(
+            7, (i) => hojeZero.add(Duration(days: i - 3 + 7 * _semOff)));
+        // Progresso continua sendo da semana do calendário (domingo a sábado).
+        final domingo = hojeZero
             .subtract(Duration(days: hoje.weekday % 7))
             .add(Duration(days: 7 * _semOff));
-        final semana =
+        final semanaCal =
             List.generate(7, (i) => domingo.add(Duration(days: i)));
         final nFeitos =
-            semana.where((d) => app.feitos.contains(chaveData(d))).length;
+            semanaCal.where((d) => app.feitos.contains(chaveData(d))).length;
         final total = app.plano.length;
         return SafeArea(
           child: ListView(
@@ -496,7 +501,7 @@ class _InicioEstado extends State<InicioTela> {
                     onTap: _semOff == 0 ? null : () => setState(() => _semOff = 0),
                     child: Text(
                       _semOff == 0
-                          ? 'Esta semana'
+                          ? 'Hoje'
                           : '${semana.first.day}/${semana.first.month} a ${semana.last.day}/${semana.last.month}  •  voltar para hoje',
                       style: const TextStyle(color: kMudo, fontSize: 13),
                     ),
@@ -757,13 +762,16 @@ class _InicioEstado extends State<InicioTela> {
     final feito = app.feitos.contains(chaveData(d)) || app.fezAtividade(d);
     final sel = i == _sel;
     final temTreino = app.treinoNo(d) != null;
+    // Quanto mais longe de hoje (posição 3), menor o retângulo.
+    final dist = (i - 3).abs();
     return Expanded(
+      flex: 15 - dist * 2,
       child: GestureDetector(
         onTap: () => _escolherDia(i),
         child: _envolveSel(sel, AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          padding: EdgeInsets.symmetric(vertical: 10 - dist * 1.0),
           decoration: BoxDecoration(
             color: sel ? const Color(0xFF0A1F4D) : branco(.07),
             borderRadius: BorderRadius.circular(16),
@@ -775,12 +783,12 @@ class _InicioEstado extends State<InicioTela> {
               Text('${d.day}',
                   style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 15,
+                      fontSize: 16 - dist * 1.0,
                       color: chaveData(d) == chaveData(hoje)
                           ? kAzul
                           : Colors.white)),
               Text(_sem[d.weekday % 7],
-                  style: const TextStyle(color: kMudo, fontSize: 12)),
+                  style: TextStyle(color: kMudo, fontSize: 13 - dist * 0.5)),
               const SizedBox(height: 8),
               Container(
                 width: 24,

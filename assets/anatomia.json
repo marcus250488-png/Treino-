@@ -1547,5 +1547,30 @@
     "series": "3 a 4",
     "reps": "10 a 15",
     "descanso": "90s"
+  },
+  "antebraco": {
+    "principal": [
+      "Antebraço (flexores do punho)"
+    ],
+    "secundario": [
+      "Braquiorradial"
+    ],
+    "estabilizador": [
+      "Bíceps"
+    ],
+    "objetivo": "Fortalecer os músculos do antebraço e a pegada.",
+    "execucao": [
+      "Segure a barra ou a corda com a palma para cima.",
+      "Apoie o antebraço na coxa ou mantenha o cotovelo fixo.",
+      "Flexione o punho levando a carga para cima, sem mexer o cotovelo.",
+      "Desça devagar até sentir o alongamento."
+    ],
+    "dicas": [
+      "Use carga moderada para não perder a forma.",
+      "Não balance o corpo para ganhar carga."
+    ],
+    "series": "3",
+    "reps": "12 a 20",
+    "descanso": "45 a 60s"
   }
 }
