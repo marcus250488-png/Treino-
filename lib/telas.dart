@@ -1978,7 +1978,6 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
         _persistir();
       }
     });
-    });
   }
 
   void _restaurar(_RunSalvo s) {
