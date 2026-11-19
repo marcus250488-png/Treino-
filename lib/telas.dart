@@ -67,14 +67,14 @@ final estiloContorno = OutlinedButton.styleFrom(
 const _sem = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 /// Anel fino com um brilho que gira em volta do dia selecionado.
-class _AnelBrilho extends StatefulWidget {
+class AnelBrilho extends StatefulWidget {
   final Widget child;
-  const _AnelBrilho({required this.child});
+  const AnelBrilho({required this.child});
   @override
-  State<_AnelBrilho> createState() => _AnelBrilhoEstado();
+  State<AnelBrilho> createState() => AnelBrilhoEstado();
 }
 
-class _AnelBrilhoEstado extends State<_AnelBrilho>
+class AnelBrilhoEstado extends State<AnelBrilho>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 2800))
@@ -92,16 +92,16 @@ class _AnelBrilhoEstado extends State<_AnelBrilho>
       animation: _c,
       child: widget.child,
       builder: (context, child) => CustomPaint(
-        foregroundPainter: _AnelBrilhoPainter(_c.value),
+        foregroundPainter: AnelBrilhoPainter(_c.value),
         child: child,
       ),
     );
   }
 }
 
-class _AnelBrilhoPainter extends CustomPainter {
+class AnelBrilhoPainter extends CustomPainter {
   final double t;
-  _AnelBrilhoPainter(this.t);
+  AnelBrilhoPainter(this.t);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -137,11 +137,11 @@ class _AnelBrilhoPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _AnelBrilhoPainter old) => old.t != t;
+  bool shouldRepaint(covariant AnelBrilhoPainter old) => old.t != t;
 }
 
 Widget _envolveSel(bool sel, Widget child) =>
-    sel ? _AnelBrilho(child: child) : child;
+    sel ? AnelBrilho(child: child) : child;
 String _dois(int n) => n.toString().padLeft(2, '0');
 String _fmt(int s) => '${_dois(s ~/ 60)}:${_dois(s % 60)}';
 
@@ -2855,7 +2855,7 @@ class _BibEstado extends State<BibliotecaTela> {
                           padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
                           child: Align(
                             alignment: Alignment.centerLeft,
-                            child: _AnelBrilho(
+                            child: AnelBrilho(
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 14, vertical: 6),

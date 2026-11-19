@@ -1039,11 +1039,29 @@ class _BuscarEstado extends State<BuscarAlimentoTela> {
                 child: Row(children: [
                   for (final cat in ['Todos', 'Proteínas', 'Carboidratos', 'Gorduras', 'Frutas'])
                     Padding(
-                      padding: const EdgeInsets.only(right: 7),
-                      child: ChoiceChip(
-                        label: Text(cat), selected: filtro == cat,
-                        onSelected: (_) => setState(() => filtro = cat),
-                        selectedColor: kAzul.withOpacity(.28),
+                      padding: const EdgeInsets.only(right: 9),
+                      child: GestureDetector(
+                        onTap: () => setState(() => filtro = cat),
+                        child: filtro == cat
+                            ? AnelBrilho(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: kAzul.withOpacity(.16),
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: Text(cat, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                ),
+                              )
+                            : Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: branco(.10),
+                                  border: Border.all(color: branco(.24)),
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Text(cat, style: const TextStyle(color: Colors.white)),
+                              ),
                       ),
                     ),
                 ]),

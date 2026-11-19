@@ -124,7 +124,12 @@ class HistoricoTela extends StatelessWidget {
     child: Row(children: [
       Icon(icone, color: kAzul),
       const SizedBox(width: 8),
-      Text(nome, style: titulo(23)),
+      AnelBrilho(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+          child: Text(nome, style: titulo(23)),
+        ),
+      ),
       const Spacer(),
       Text('$quantidade registros', style: const TextStyle(color: kMudo, fontSize: 12)),
     ]),

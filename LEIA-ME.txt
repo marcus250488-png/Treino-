@@ -135,3 +135,9 @@ v1.13.0: "Descanso" pulsando em branco metalico; cardio com velocidade/inclinaca
   peixes, ovos, laticínios, frutas, legumes, cereais e fontes de gordura.
 * Os macros dos alimentos são exibidos por 100 g, mantendo o fluxo de quantidade
   e edição já existente.
+
+
+VERSAO 1.14.2 - IDENTIDADE VISUAL
+- Aplicado o anel azul luminoso animado da Biblioteca nas categorias selecionadas da Alimentacao.
+- Aplicado o mesmo contorno animado nos titulos das secoes Treinos e Cardio do Historico.
+- Mantido o comportamento de selecao e filtros existentes.
