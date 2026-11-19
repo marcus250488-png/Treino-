@@ -1570,7 +1570,7 @@ class _DetEstado extends State<DesempenhoDetalheTela> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(s.dia, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text(s.rotulo, style: const TextStyle(fontWeight: FontWeight.w700)),
                         Text(fmtDataIso(s.data),
                             style: const TextStyle(color: kMudo, fontSize: 12)),
                       ],

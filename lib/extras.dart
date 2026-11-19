@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'state.dart';
+import 'nivel.dart';
 import 'telas.dart';
 import 'edicao.dart';
 import 'passos.dart';
@@ -109,7 +110,7 @@ class HistoricoTela extends StatelessWidget {
       builder: (c) => AlertDialog(
         title: const Text('Excluir este treino?'),
         content: Text(
-            '${s.dia} • ${fmtDataIso(s.data)}\n\nEle sai do histórico e das estatísticas. Isso não pode ser desfeito.'),
+            '${s.rotulo} • ${fmtDataIso(s.data)}\n\nEle sai do histórico e das estatísticas. Isso não pode ser desfeito.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
@@ -175,8 +176,11 @@ class HistoricoTela extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(s.dia, style: titulo(24)),
-                              Text(fmtDataIso(s.data),
+                              Text(s.rotulo, style: titulo(24)),
+                              Text(
+                                  s.treinoDeOutroDia == null
+                                      ? fmtDataIso(s.data)
+                                      : '${fmtDataIso(s.data)} • treino de ${s.dia.split('-').first.toLowerCase()}',
                                   style: const TextStyle(color: kMudo)),
                               const SizedBox(height: 4),
                               Text(
@@ -657,7 +661,8 @@ class MeuPlanoTela extends StatelessWidget {
       listenable: app,
       builder: (context, _) {
         final totalTreinos = app.sessoes.where((s) => s.completo).length;
-        final totalPlano = app.plano.isEmpty ? 5 * 5 : app.plano.length * 5; // 5 semanas
+        final nSem = app.semanasPlano;
+        final totalPlano = (app.plano.isEmpty ? 5 : app.plano.length) * nSem;
         final pct = totalPlano == 0 ? 0.0 : (totalTreinos / totalPlano).clamp(0.0, 1.0);
         final diasAtivos = app.feitos.length;
         final frequencia = app.plano.length;
@@ -676,8 +681,8 @@ class MeuPlanoTela extends StatelessWidget {
           referencia.day,
         ).subtract(Duration(days: referencia.weekday - 1));
         final semanaAtual = (DateTime.now().difference(inicioJornada).inDays ~/ 7 + 1)
-            .clamp(1, 5).toInt();
-        final semanas = List.generate(5, (i) {
+            .clamp(1, nSem).toInt();
+        final semanas = List.generate(nSem, (i) {
           final ini = inicioJornada.add(Duration(days: i * 7));
           final fim = ini.add(const Duration(days: 7));
           return app.feitos.where((k) {
@@ -709,8 +714,8 @@ class MeuPlanoTela extends StatelessWidget {
                       style: titulo(26),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Você irá visualizar todas as informações sobre seu programa. Ele terá duração total de 30 dias e foi criado para ajudar você a alcançar seu objetivo principal.',
+                    Text(
+                      'Você irá visualizar todas as informações sobre seu programa. Ele terá duração total de ${nSem * 7} dias e foi criado para ajudar você a alcançar seu objetivo principal.',
                       style: TextStyle(color: kMudo, height: 1.4),
                     ),
                     const SizedBox(height: 16),
@@ -746,11 +751,43 @@ class MeuPlanoTela extends StatelessWidget {
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        Expanded(child: _infoChip(Icons.timer_outlined, '5 Semanas', 'Duração')),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _escolherSemanas(context),
+                            child: _infoChip(Icons.timer_outlined,
+                                '$nSem Semanas', 'Duração (toque p/ mudar)'),
+                          ),
+                        ),
                         const SizedBox(width: 10),
-                        Expanded(child: _infoChip(Icons.trending_up, 'Iniciante', 'Nível')),
+                        Expanded(
+                            child: _infoChip(Icons.trending_up,
+                                app.nivelTreino.nome, 'Nível')),
                       ],
                     ),
+                    if (app.progressoNivel.proximo != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                          'Próximo nível: ${app.progressoNivel.proximo!.nome}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: app.progressoNivel.progresso,
+                          minHeight: 6,
+                          color: kAzul,
+                          backgroundColor: branco(.12),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(app.progressoNivel.falta,
+                          style: const TextStyle(color: kMudo, fontSize: 11.5)),
+                      const SizedBox(height: 2),
+                      const Text(
+                          'O nível sobe sozinho conforme suas cargas evoluem.',
+                          style: TextStyle(color: kMudo, fontSize: 11.5)),
+                    ],
                     const SizedBox(height: 16),
                     OutlinedButton.icon(
                       style: estiloContorno,
@@ -779,17 +816,17 @@ class MeuPlanoTela extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Sua jornada de 5 semanas',
+                          Text('Sua jornada de $nSem semanas',
                               style: TextStyle(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 18,
                                   color: Colors.white)),
-                          SizedBox(height: 6),
-                          Text(
+                          const SizedBox(height: 6),
+                          const Text(
                             'É aqui onde tudo começa! Você visualizará quais dias têm treinos, dias de descanso e quantos treinos já foram realizados.',
                             style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.35),
                           ),
@@ -898,8 +935,8 @@ class MeuPlanoTela extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              for (var s = 1; s <= 5; s++) ...[
-                _semanaCard(context, s, s == semanaAtual, semanas[s - 1].clamp(0, 5)),
+              for (var s = 1; s <= nSem; s++) ...[
+                _semanaCard(context, s, s == semanaAtual, semanas[s - 1].clamp(0, 7)),
                 const SizedBox(height: 10),
               ],
             ],
@@ -907,6 +944,27 @@ class MeuPlanoTela extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _escolherSemanas(BuildContext context) async {
+    final n = await showDialog<int>(
+      context: context,
+      builder: (c) => SimpleDialog(
+        title: const Text('Duração do plano'),
+        children: [
+          for (final v in const [4, 5, 6, 8, 10, 12])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(c, v),
+              child: Text('$v semanas',
+                  style: TextStyle(
+                      fontWeight: v == app.semanasPlano
+                          ? FontWeight.w800
+                          : FontWeight.w400)),
+            ),
+        ],
+      ),
+    );
+    if (n != null) await app.setSemanasPlano(n);
   }
 
   Widget _infoChip(IconData icon, String title, String sub) {

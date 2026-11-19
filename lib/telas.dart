@@ -897,8 +897,8 @@ class _InicioEstado extends State<InicioTela> {
             padding: const EdgeInsets.only(top: 10),
             child: Text(
               f.cardio
-                  ? '${f.dia} • ${f.resumoCardio}'
-                  : '${f.dia} • ${(f.seg / 60).round()} min',
+                  ? '${f.rotulo} • ${f.resumoCardio}'
+                  : '${f.rotulo} • ${(f.seg / 60).round()} min',
               textAlign: TextAlign.center,
               style: const TextStyle(color: kAzul),
             ),

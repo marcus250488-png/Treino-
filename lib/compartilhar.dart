@@ -94,7 +94,7 @@ class CartaoTreino extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         letterSpacing: 8)),
                 const SizedBox(height: 50),
-                Text(sessao.dia, style: titulo(130)),
+                Text(sessao.rotulo, style: titulo(130)),
                 if (dia != null && dia.foco.isNotEmpty)
                   Text(dia.foco,
                       style: const TextStyle(color: kMudo, fontSize: 44)),
@@ -172,7 +172,7 @@ class _CompartilharEstado extends State<CompartilharTela> {
       await arq.writeAsBytes(dados!.buffer.asUint8List());
       await Share.shareXFiles(
         [XFile(arq.path, mimeType: 'image/png')],
-        text: 'Treino de hoje: ${widget.sessao.dia}',
+        text: 'Treino de hoje: ${widget.sessao.rotulo}',
       );
     } catch (e) {
       if (mounted) {

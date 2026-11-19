@@ -67,7 +67,7 @@ class SessaoDetalheTela extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 40),
         children: [
-          Text(s.dia, style: titulo(36)),
+          Text(s.rotulo, style: titulo(36)),
           const SizedBox(height: 2),
           Text(_data(), style: const TextStyle(color: kMudo)),
           const SizedBox(height: 8),

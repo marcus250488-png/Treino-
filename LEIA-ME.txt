@@ -121,3 +121,6 @@ v1.12.2: treino em andamento sobrevive a sair da tela (cronometro continua; troc
 v1.12.3: treino em andamento salvo no celular e retomado ao abrir o app (mesmo se o Android fechar); cronometro por relogio real; tela ligada por padrao; pede permissao de bateria uma vez.
 
 v1.13.0: "Descanso" pulsando em branco metalico; cardio com velocidade/inclinacao da esteira ao vivo (km, kcal e ritmo calculados); tela "Ja fiz cardio" repaginada com tempo, distancia, calorias e ritmo.
+
+
+v1.14.0: Historico mostra o dia REAL em que o treino foi feito (ex.: treino de quarta feito na quinta aparece como Quinta-feira, com 'treino de quarta' na linha da data); vale tambem para registros antigos. Nivel de treino (Iniciante / Intermediario / Avancado) calculado pela progressao de carga (aumentos de carga, exercicios diferentes e semanas de treino), sobe sozinho com aviso e aparece em Meu plano com barra de progresso. Duracao do plano editavel em Meu plano (toque em Duracao); textos de semanas/dias e total de treinos usam esse valor.

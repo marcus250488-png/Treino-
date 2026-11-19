@@ -11,6 +11,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_config.dart';
 import 'nutri_modelo.dart';
+import 'nivel.dart';
 
 String norm(String s) {
   const from = 'áàâãäéèêëíìîïóòôõöúùûüçñ';
@@ -155,6 +156,18 @@ class Sessao {
     this.detalhes,
   });
   bool get cardio => tipo == 'cardio';
+
+  /// Nome para exibir: o dia da semana em que o treino foi REALMENTE feito.
+  /// ([dia] continua sendo o treino do plano, usado para ligar a sessão à rotina.)
+  String get rotulo {
+    if (cardio || livre || !_nomesDia.containsValue(dia)) return dia;
+    final dt = DateTime.tryParse(data);
+    if (dt == null) return dia;
+    return _nomesDia[dt.weekday] ?? dia;
+  }
+
+  /// Se o treino do plano é de outro dia (ex.: treino de quarta feito na quinta).
+  String? get treinoDeOutroDia => rotulo == dia ? null : dia;
   String get resumoCardio {
     final partes = <String>['${(seg / 60).round()} min'];
     if (km != null && km! > 0) {
@@ -405,6 +418,8 @@ class AppState extends ChangeNotifier {
   int metaAgua = 2500;
   double? metaPeso;
   int descanso = 75;
+  int semanasPlano = 5; // duração do plano (editável em Meu plano)
+  int _nivelSalvo = -1; // maior nível de treino já alcançado
   bool manterTela = true; // não desligar a tela com o app aberto
   Map<String, dynamic> anatomia = {}; // id do exercício -> músculos, execução, dicas
   bool aquecimento = false; // bloco de aquecimento no topo do treino
@@ -714,7 +729,11 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void _carregarLocal() => _aplicar(_lerLocal());
+  void _carregarLocal() {
+    _aplicar(_lerLocal());
+    semanasPlano = _p.getInt(_k('semanas_plano')) ?? 5;
+    _nivelSalvo = _p.getInt(_k('nivel_treino')) ?? -1;
+  }
 
   Future<void> _salvarTudoLocal() async {
     final m = _empacotar();
@@ -1562,10 +1581,40 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> addSessao(Sessao s) async {
+    final nivelAntes = nivelTreino.index;
     sessoes.add(s);
     await _p.setString(
         _k('sessoes'), jsonEncode(sessoes.map((e) => e.toJson()).toList()));
     if (s.completo) await _xpDaSessao(s);
+    await _verificarNivelTreino(nivelAntes);
+    notifyListeners();
+  }
+
+  /// Nível de treino atual (só sobe, nunca desce por excluir um treino).
+  ProgressoNivel get progressoNivel => calcularNivel(sessoes);
+  NivelTreino get nivelTreino {
+    final i = progressoNivel.nivel.index;
+    return NivelTreino.values[i > _nivelSalvo ? i : _nivelSalvo];
+  }
+
+  Future<void> _verificarNivelTreino(int antes) async {
+    final agora = progressoNivel.nivel.index;
+    if (agora > _nivelSalvo) {
+      _nivelSalvo = agora;
+      await _p.setInt(_k('nivel_treino'), agora);
+    }
+    if (agora > antes) {
+      final n = NivelTreino.values[agora];
+      Future.delayed(const Duration(milliseconds: 3500), () {
+        xpAviso.value = XpAviso('Você subiu para ${n.nome}! 💪',
+            'Suas cargas estão evoluindo. O app atualizou seu nível.');
+      });
+    }
+  }
+
+  Future<void> setSemanasPlano(int n) async {
+    semanasPlano = n.clamp(1, 52).toInt();
+    await _p.setInt(_k('semanas_plano'), semanasPlano);
     notifyListeners();
   }
 
