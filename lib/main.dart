@@ -67,8 +67,14 @@ class _ShellEstado extends State<Shell> {
   void initState() {
     super.initState();
     app.xpAviso.addListener(_aoXp);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) pedirPermissoesInicial(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      // Treino em andamento? Volta direto para ele.
+      if (await retomarTreinoSalvo(context)) return;
+      if (!mounted) return;
+      await pedirPermissoesInicial(context);
+      if (!mounted) return;
+      await pedirBateriaUmaVez(context);
     });
   }
 

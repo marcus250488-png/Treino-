@@ -117,3 +117,5 @@ Esses módulos estão documentados no roadmap e dependem de decisões e serviço
 v1.12.0: serie crescente (3-4-5-6-7 reps, 15 s de pausa, total 25) na ultima serie de exercicios de biceps, triceps, ombros e antebraco. Conta 25 reps no volume.
 
 v1.12.2: treino em andamento sobrevive a sair da tela (cronometro continua; trocar de exercicio mantem o progresso e os pulados continuam na fila).
+
+v1.12.3: treino em andamento salvo no celular e retomado ao abrir o app (mesmo se o Android fechar); cronometro por relogio real; tela ligada por padrao; pede permissao de bateria uma vez.

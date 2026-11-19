@@ -401,7 +401,7 @@ class AppState extends ChangeNotifier {
   int metaAgua = 2500;
   double? metaPeso;
   int descanso = 75;
-  bool manterTela = false; // não desligar a tela com o app aberto
+  bool manterTela = true; // não desligar a tela com o app aberto
   Map<String, dynamic> anatomia = {}; // id do exercício -> músculos, execução, dicas
   bool aquecimento = false; // bloco de aquecimento no topo do treino
   late SharedPreferences _p;
@@ -562,7 +562,14 @@ class AppState extends ChangeNotifier {
       _pre = 'u_${u}_';
     }
     _carregarLocal();
-    manterTela = _p.getBool(_k('manter_tela')) ?? false;
+    // Padrão ligado; uma vez, força ligado também para quem já tinha desligado.
+    if (_p.getBool(_k('manter_tela_v2')) == null) {
+      manterTela = true;
+      await _p.setBool(_k('manter_tela'), true);
+      await _p.setBool(_k('manter_tela_v2'), true);
+    } else {
+      manterTela = _p.getBool(_k('manter_tela')) ?? true;
+    }
     aquecimento = _p.getBool(_k('aquecimento')) ?? false;
     if (_inicioAjustado && inicioPlano != null) {
       await _p.setString(_k('inicio_plano'), inicioPlano!.toIso8601String());
@@ -1769,6 +1776,16 @@ class AppState extends ChangeNotifier {
         'alimentos_editados': alimOver,
         'exercicios_editados': exOver,
       });
+
+  // ---------- Treino em andamento (retomar se o app for fechado) ----------
+  String? lerRunSalvo() => _p.getString(_k('run_salvo'));
+  Future<void> gravarRunSalvo(String? json) async {
+    if (json == null) {
+      await _p.remove(_k('run_salvo'));
+    } else {
+      await _p.setString(_k('run_salvo'), json);
+    }
+  }
 
   // ---------- Telas e aquecimento ----------
   Future<void> setManterTela(bool v) async {

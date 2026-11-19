@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -1721,6 +1722,16 @@ class _ResumoEx {
   final bool cresc; // última série foi "crescente" (3-4-5-6-7 = 25 reps)
   _ResumoEx(this.nome, this.grupo, this.reps, this.cargas, {this.cresc = false});
 
+  Map<String, dynamic> toJson() =>
+      {'nome': nome, 'grupo': grupo, 'reps': reps, 'cargas': cargas, 'cresc': cresc};
+  factory _ResumoEx.fromJson(Map<String, dynamic> j) => _ResumoEx(
+        j['nome'] as String,
+        j['grupo'] as String,
+        j['reps'] as String,
+        [for (final c in (j['cargas'] as List)) (c as num).toDouble()],
+        cresc: (j['cresc'] ?? false) as bool,
+      );
+
   String get texto =>
       cresc ? '$_base • última crescente (25 reps)' : _base;
 
@@ -1740,6 +1751,11 @@ class _ProgEx {
   final int si;
   final List<double> cargas;
   _ProgEx(this.si, this.cargas);
+  Map<String, dynamic> toJson() => {'si': si, 'cargas': cargas};
+  factory _ProgEx.fromJson(Map<String, dynamic> j) => _ProgEx(
+        j['si'] as int,
+        [for (final c in (j['cargas'] as List)) (c as num).toDouble()],
+      );
 }
 
 /// Treino em andamento que sobrevive a sair da tela de execução.
@@ -1776,6 +1792,86 @@ class _RunSalvo {
     required this.prog,
     required this.saiuEm,
   });
+
+  Map<String, dynamic> toJson() => {
+        'dia': dia,
+        'data': data,
+        'livre': livre,
+        'pausado': pausado,
+        'fila': fila,
+        'si': si,
+        'seg': seg,
+        'descanso': descanso,
+        'feitasSeries': feitasSeries,
+        'rpe': rpe,
+        'extra': extra.map((k, v) => MapEntry('$k', v)),
+        'volume': volume,
+        'resumo': [for (final r in resumo) r.toJson()],
+        'cargasEx': cargasEx,
+        'recordes': recordes.toList(),
+        'prog': prog.map((k, v) => MapEntry('$k', v.toJson())),
+        'saiuEm': saiuEm.toIso8601String(),
+      };
+
+  factory _RunSalvo.fromJson(Map<String, dynamic> j) => _RunSalvo(
+        dia: j['dia'] as String,
+        data: j['data'] as String,
+        livre: (j['livre'] ?? false) as bool,
+        pausado: (j['pausado'] ?? false) as bool,
+        fila: [for (final x in (j['fila'] as List)) x as int],
+        si: j['si'] as int,
+        seg: j['seg'] as int,
+        descanso: j['descanso'] as int,
+        feitasSeries: j['feitasSeries'] as int,
+        rpe: Map<String, String>.from(j['rpe'] as Map),
+        extra: {
+          for (final e in (j['extra'] as Map).entries)
+            int.parse(e.key as String): e.value as int
+        },
+        volume: (j['volume'] as num).toDouble(),
+        resumo: [
+          for (final r in (j['resumo'] as List))
+            _ResumoEx.fromJson(Map<String, dynamic>.from(r as Map))
+        ],
+        cargasEx: [for (final c in (j['cargasEx'] as List)) (c as num).toDouble()],
+        recordes: {for (final r in (j['recordes'] as List)) r as String},
+        prog: {
+          for (final e in (j['prog'] as Map).entries)
+            int.parse(e.key as String):
+                _ProgEx.fromJson(Map<String, dynamic>.from(e.value as Map))
+        },
+        saiuEm: DateTime.parse(j['saiuEm'] as String),
+      );
+}
+
+/// Ao abrir o app: se havia um treino em andamento (o Android pode ter fechado o
+/// app com a tela apagada), volta direto para ele, de onde parou.
+Future<bool> retomarTreinoSalvo(BuildContext context) async {
+  final raw = app.lerRunSalvo();
+  if (raw == null) return false;
+  try {
+    final sv = _RunSalvo.fromJson(Map<String, dynamic>.from(jsonDecode(raw) as Map));
+    Dia? dia;
+    for (final d in app.plano) {
+      if (d.nome == sv.dia) dia = d;
+    }
+    final velho = DateTime.now().difference(sv.saiuEm).inHours >= 8;
+    final foraDeIndice = dia == null ||
+        sv.fila.any((k) => k < 0 || k >= dia!.itens.length) ||
+        sv.prog.keys.any((k) => k < 0 || k >= dia!.itens.length);
+    if (sv.livre || velho || foraDeIndice || sv.data != chaveData(DateTime.now())) {
+      await app.gravarRunSalvo(null);
+      return false;
+    }
+    _RunSalvo.atual = sv;
+    if (!context.mounted) return false;
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => RunTela(dia: dia!)));
+    return true;
+  } catch (_) {
+    await app.gravarRunSalvo(null);
+    return false;
+  }
 }
 
 class RunTela extends StatefulWidget {
@@ -1794,7 +1890,7 @@ class RunTela extends StatefulWidget {
   State<RunTela> createState() => _RunEstado();
 }
 
-class _RunEstado extends State<RunTela> {
+class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
   late List<int> _fila; // ordem dos exercícios; "Pular" manda o atual para o fim
   int get ei => _fila.first;
   int si = 0, seg = 0, descanso = 0, feitasSeries = 0;
@@ -1803,6 +1899,8 @@ class _RunEstado extends State<RunTela> {
   int get seriesAtual => it.series + (_extra[ei] ?? 0);
   bool pausado = false;
   bool _terminou = false;
+  late DateTime _ultimoTick;
+  int _acumPersist = 0;
   final Map<int, _ProgEx> _prog = {}; // progresso de exercícios deixados pela metade
   double volume = 0;
   // Série crescente: 3-4-5-6-7 reps com 15 s de pausa (total 25), só na última série.
@@ -1857,16 +1955,29 @@ class _RunEstado extends State<RunTela> {
         : base;
     }
     _carregar();
+    WidgetsBinding.instance.addObserver(this);
+    _ultimoTick = DateTime.now();
     _t = Timer.periodic(const Duration(seconds: 1), (_) {
+      // Relógio real: se o app ficou em segundo plano, recupera o tempo perdido.
+      final agora = DateTime.now();
+      final dt = agora.difference(_ultimoTick).inSeconds;
+      if (dt <= 0) return;
+      _ultimoTick = _ultimoTick.add(Duration(seconds: dt));
       if (pausado) return;
       setState(() {
-        seg++;
-        if (descanso > 0) descanso--;
+        seg += dt;
+        descanso = descanso > dt ? descanso - dt : 0;
         if (_crescPausa > 0) {
-          _crescPausa--;
+          _crescPausa = _crescPausa > dt ? _crescPausa - dt : 0;
           if (_crescPausa == 0) HapticFeedback.heavyImpact();
         }
       });
+      _acumPersist += dt;
+      if (_acumPersist >= 5) {
+        _acumPersist = 0;
+        _persistir();
+      }
+    });
     });
   }
 
@@ -1920,10 +2031,7 @@ class _RunEstado extends State<RunTela> {
     _restaurarProgresso();
   }
 
-  @override
-  void dispose() {
-    if (!_terminou) {
-      _RunSalvo.atual = _RunSalvo(
+  _RunSalvo _instantaneo() => _RunSalvo(
         dia: widget.dia.nome,
         data: chaveData(DateTime.now()),
         livre: widget.livre,
@@ -1942,6 +2050,26 @@ class _RunEstado extends State<RunTela> {
         prog: Map<int, _ProgEx>.of(_prog),
         saiuEm: DateTime.now(),
       );
+
+  /// Guarda o treino em andamento no celular (sobrevive ao app ser fechado).
+  void _persistir() {
+    if (_terminou || widget.livre) return;
+    try {
+      app.gravarRunSalvo(jsonEncode(_instantaneo().toJson()));
+    } catch (_) {}
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    if (estado != AppLifecycleState.resumed) _persistir();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (!_terminou) {
+      _RunSalvo.atual = _instantaneo();
+      _persistir();
     }
     _t.cancel();
     _carga.dispose();
@@ -1986,6 +2114,7 @@ class _RunEstado extends State<RunTela> {
     } else {
       _fim();
     }
+    _persistir();
   }
 
   /// Pula para o próximo; este volta ao fim da fila (só se ainda não há série feita).
@@ -2026,6 +2155,7 @@ class _RunEstado extends State<RunTela> {
   Future<void> _fim({bool parcial = false}) async {
     _terminou = true;
     _RunSalvo.atual = null;
+    app.gravarRunSalvo(null);
     _t.cancel();
     final total = widget.dia.itens.fold<int>(0, (s, e) => s + e.series) +
         _extra.values.fold<int>(0, (s, e) => s + e);

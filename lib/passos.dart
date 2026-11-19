@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:permission_handler/permission_handler.dart' show Permission;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'state.dart';
 import 'telas.dart';
@@ -43,6 +44,39 @@ Future<void> pedirPermissoesInicial(BuildContext context) async {
     }
   } catch (_) {}
   await app.iniciarPassos(pedir: true);
+}
+
+/// Pede, uma vez, para o app não ser fechado pelo Android com a tela apagada
+/// (assim o treino em andamento continua de onde parou).
+Future<void> pedirBateriaUmaVez(BuildContext context) async {
+  final p = await SharedPreferences.getInstance();
+  if (p.getBool('perm_bateria') ?? false) return;
+  if (!context.mounted) return;
+  final ok = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (c) => AlertDialog(
+      title: const Text('Manter o app ativo no treino'),
+      content: const Text(
+        'A tela do app já fica ligada enquanto ele está aberto.\n\n'
+        'Para o Android não fechar o app quando você bloqueia a tela no meio do '
+        'treino, permita que ele rode sem restrição de bateria.',
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Agora não')),
+        TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Permitir')),
+      ],
+    ),
+  );
+  await p.setBool('perm_bateria', true);
+  if (ok != true) return;
+  try {
+    await Permission.ignoreBatteryOptimizations.request();
+  } catch (_) {}
 }
 
 // ============================================================
