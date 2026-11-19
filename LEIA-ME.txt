@@ -123,4 +123,15 @@ v1.12.3: treino em andamento salvo no celular e retomado ao abrir o app (mesmo s
 v1.13.0: "Descanso" pulsando em branco metalico; cardio com velocidade/inclinacao da esteira ao vivo (km, kcal e ritmo calculados); tela "Ja fiz cardio" repaginada com tempo, distancia, calorias e ritmo.
 
 
-v1.14.0: Historico mostra o dia REAL em que o treino foi feito (ex.: treino de quarta feito na quinta aparece como Quinta-feira, com 'treino de quarta' na linha da data); vale tambem para registros antigos. Nivel de treino (Iniciante / Intermediario / Avancado) calculado pela progressao de carga (aumentos de carga, exercicios diferentes e semanas de treino), sobe sozinho com aviso e aparece em Meu plano com barra de progresso. Duracao do plano editavel em Meu plano (toque em Duracao); textos de semanas/dias e total de treinos usam esse valor.
+--- v1.14.1 (mesclada) ---
+* Base completa da v1.13.0 com as alterações de código da v1.14.0 incorporadas:
+  histórico com o dia real do treino, nível automático (Iniciante/Intermediário/
+  Avançado) e duração do plano editável.
+* Histórico reorganizado em seções independentes: Treinos e Cardio. Os resumos
+  de tempo/volume dos treinos não misturam mais os registros de cardio; o cardio
+  tem seus próprios totais de sessões, tempo e distância.
+* Busca de alimentos com filtros Todos, Proteínas, Carboidratos, Gorduras e Frutas.
+* Biblioteca nutricional ampliada de 93 para 130 alimentos, incluindo carnes,
+  peixes, ovos, laticínios, frutas, legumes, cereais e fontes de gordura.
+* Os macros dos alimentos são exibidos por 100 g, mantendo o fluxo de quantidade
+  e edição já existente.

@@ -972,11 +972,20 @@ class BuscarAlimentoTela extends StatefulWidget {
 
 class _BuscarEstado extends State<BuscarAlimentoTela> {
   String q = '';
+  String filtro = 'Todos';
+
+  String _categoria(Alimento a) {
+    final n = norm(a.nome);
+    if (['banana','maca','maçã','pera','laranja','mamao','mamão','manga','uva','morango','abacaxi','abacate','melancia','melão','kiwi','goiaba','acerola','coco'].any((x) => n.contains(norm(x)))) return 'Frutas';
+    if (a.p >= a.c && a.p >= a.g) return 'Proteínas';
+    if (a.g >= a.p && a.g >= a.c) return 'Gorduras';
+    return 'Carboidratos';
+  }
 
   List<Alimento> _filtrar() {
     final n = norm(q);
     final l = app.alimentos
-        .where((a) => n.isEmpty || norm(a.nome).contains(n))
+        .where((a) => (n.isEmpty || norm(a.nome).contains(n)) && (filtro == 'Todos' || _categoria(a) == filtro))
         .toList();
     l.sort((a, b) => norm(a.nome).compareTo(norm(b.nome)));
     return l;
@@ -1023,6 +1032,21 @@ class _BuscarEstado extends State<BuscarAlimentoTela> {
                     ),
                   ],
                 ),
+              ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                child: Row(children: [
+                  for (final cat in ['Todos', 'Proteínas', 'Carboidratos', 'Gorduras', 'Frutas'])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 7),
+                      child: ChoiceChip(
+                        label: Text(cat), selected: filtro == cat,
+                        onSelected: (_) => setState(() => filtro = cat),
+                        selectedColor: kAzul.withOpacity(.28),
+                      ),
+                    ),
+                ]),
               ),
               if (widget.onAdd != null)
                 const Padding(

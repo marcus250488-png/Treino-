@@ -108,21 +108,63 @@ class HistoricoTela extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Excluir este treino?'),
-        content: Text(
-            '${s.rotulo} • ${fmtDataIso(s.data)}\n\nEle sai do histórico e das estatísticas. Isso não pode ser desfeito.'),
+        title: Text(s.cardio ? 'Excluir este cardio?' : 'Excluir este treino?'),
+        content: Text('${s.dia} • ${fmtDataIso(s.data)}\n\nEste registro será removido do histórico e das estatísticas.'),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Cancelar')),
-          TextButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Excluir')),
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Excluir')),
         ],
       ),
     );
     if (ok == true) await app.excluirSessao(s);
   }
+
+  Widget _tituloSecao(String nome, int quantidade, IconData icone) => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
+    child: Row(children: [
+      Icon(icone, color: kAzul),
+      const SizedBox(width: 8),
+      Text(nome, style: titulo(23)),
+      const Spacer(),
+      Text('$quantidade registros', style: const TextStyle(color: kMudo, fontSize: 12)),
+    ]),
+  );
+
+  Widget _cartao(BuildContext context, Sessao s) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Vidro(
+        padding: const EdgeInsets.all(14),
+        raio: 22,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SessaoDetalheTela(sessao: s))),
+        child: Row(children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(s.rotulo, style: titulo(23)),
+            Text(s.treinoDeOutroDia == null
+              ? fmtDataIso(s.data)
+              : '${fmtDataIso(s.data)} • treino de ${s.dia.split('-').first.toLowerCase()}',
+              style: const TextStyle(color: kMudo)),
+            const SizedBox(height: 4),
+            Text(s.cardio
+              ? s.resumoCardio
+              : '${s.series} de ${s.seriesTotal} séries • ${fmtTempo(s.seg)} • ${s.volume.round()} kg',
+              style: const TextStyle(color: kMudo)),
+          ])),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: s.completo ? kAzul : const Color.fromRGBO(255, 193, 7, .25),
+              borderRadius: BorderRadius.circular(14)),
+            child: Text(s.completo ? 'Completo' : 'Parcial', style: const TextStyle(fontSize: 12)),
+          ),
+          IconButton(tooltip: s.cardio ? 'Excluir cardio' : 'Excluir treino',
+            onPressed: () => _excluir(context, s),
+            icon: const Icon(Icons.delete_outline, color: Colors.redAccent)),
+        ]),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,89 +172,42 @@ class HistoricoTela extends StatelessWidget {
       body: ListenableBuilder(
         listenable: app,
         builder: (context, _) {
-          final l = app.sessoes.reversed.toList();
-          if (l.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Nenhum treino registrado ainda. Conclua um treino para ele aparecer aqui.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: kMudo),
-                ),
-              ),
-            );
+          final todos = app.sessoes.reversed.toList();
+          final treinos = todos.where((s) => !s.cardio).toList();
+          final cardios = todos.where((s) => s.cardio).toList();
+          if (todos.isEmpty) {
+            return const Center(child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('Nenhum treino ou cardio registrado ainda.', textAlign: TextAlign.center, style: TextStyle(color: kMudo)),
+            ));
           }
-          final tempo = l.fold<int>(0, (s, e) => s + e.seg);
-          final vol = l.fold<double>(0, (s, e) => s + e.volume);
+          final tempoTreino = treinos.fold<int>(0, (s, e) => s + e.seg);
+          final volume = treinos.fold<double>(0, (s, e) => s + e.volume);
+          final tempoCardio = cardios.fold<int>(0, (s, e) => s + e.seg);
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
             children: [
-              Vidro(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _resumo('${l.length}', 'treinos'),
-                    _resumo(fmtTempo(tempo), 'tempo total'),
-                    _resumo('${vol.round()}', 'kg de volume'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              for (final s in l)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Vidro(
-                    padding: const EdgeInsets.all(14),
-                    raio: 22,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => SessaoDetalheTela(sessao: s)),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(s.rotulo, style: titulo(24)),
-                              Text(
-                                  s.treinoDeOutroDia == null
-                                      ? fmtDataIso(s.data)
-                                      : '${fmtDataIso(s.data)} • treino de ${s.dia.split('-').first.toLowerCase()}',
-                                  style: const TextStyle(color: kMudo)),
-                              const SizedBox(height: 4),
-                              Text(
-                                  s.cardio
-                                      ? s.resumoCardio
-                                      : '${s.series} de ${s.seriesTotal} séries • ${fmtTempo(s.seg)} • ${s.volume.round()} kg',
-                                  style: const TextStyle(color: kMudo)),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: s.completo
-                                ? kAzul
-                                : const Color.fromRGBO(255, 193, 7, .25),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Text(s.completo ? 'Completo' : 'Parcial',
-                              style: const TextStyle(fontSize: 12)),
-                        ),
-                        IconButton(
-                          tooltip: 'Excluir treino',
-                          onPressed: () => _excluir(context, s),
-                          icon: const Icon(Icons.delete_outline,
-                              color: Colors.redAccent),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              Vidro(child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+                _resumo('${treinos.length}', 'treinos'),
+                _resumo(fmtTempo(tempoTreino), 'tempo de treino'),
+                _resumo('${volume.round()}', 'kg de volume'),
+              ])),
+              if (cardios.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Vidro(child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+                  _resumo('${cardios.length}', 'cardios'),
+                  _resumo(fmtTempo(tempoCardio), 'tempo de cardio'),
+                  _resumo('${cardios.fold<double>(0, (v, e) => v + (e.km ?? 0)).toStringAsFixed(2).replaceAll('.', ',')}', 'km percorridos'),
+                ])),
+              ],
+              if (treinos.isNotEmpty) ...[
+                _tituloSecao('Treinos', treinos.length, Icons.fitness_center),
+                for (final s in treinos) _cartao(context, s),
+              ],
+              if (cardios.isNotEmpty) ...[
+                _tituloSecao('Cardio', cardios.length, Icons.directions_run),
+                for (final s in cardios) _cartao(context, s),
+              ],
             ],
           );
         },
