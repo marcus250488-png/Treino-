@@ -1659,7 +1659,7 @@ class _DetalheExEstado extends State<_DetalheEx> {
                   nav.pop();
                   nav.push(MaterialPageRoute(
                     builder: (_) =>
-                        RunTela(dia: widget.dia!, inicio: widget.indice),
+                        RunTela(dia: widget.dia!, inicio: widget.indice, daqui: true),
                   ));
                 },
                 icon: const Icon(Icons.play_arrow_rounded),
@@ -1736,15 +1736,59 @@ class _ResumoEx {
   }
 }
 
+class _ProgEx {
+  final int si;
+  final List<double> cargas;
+  _ProgEx(this.si, this.cargas);
+}
+
+/// Treino em andamento que sobrevive a sair da tela de execução.
+class _RunSalvo {
+  static _RunSalvo? atual;
+  final String dia, data;
+  final bool livre, pausado;
+  final List<int> fila;
+  final int si, seg, descanso, feitasSeries;
+  final Map<String, String> rpe;
+  final Map<int, int> extra;
+  final double volume;
+  final List<_ResumoEx> resumo;
+  final List<double> cargasEx;
+  final Set<String> recordes;
+  final Map<int, _ProgEx> prog;
+  final DateTime saiuEm;
+  _RunSalvo({
+    required this.dia,
+    required this.data,
+    required this.livre,
+    required this.pausado,
+    required this.fila,
+    required this.si,
+    required this.seg,
+    required this.descanso,
+    required this.feitasSeries,
+    required this.rpe,
+    required this.extra,
+    required this.volume,
+    required this.resumo,
+    required this.cargasEx,
+    required this.recordes,
+    required this.prog,
+    required this.saiuEm,
+  });
+}
+
 class RunTela extends StatefulWidget {
   final Dia dia;
   final bool livre;
   final int inicio; // exercício em que começar ("começar daqui")
+  final bool daqui; // true = ir direto para o exercício [inicio]
   const RunTela({
     super.key,
     required this.dia,
     this.livre = false,
     this.inicio = 0,
+    this.daqui = false,
   });
   @override
   State<RunTela> createState() => _RunEstado();
@@ -1758,6 +1802,8 @@ class _RunEstado extends State<RunTela> {
   final Map<int, int> _extra = {}; // séries a mais por exercício (só nesta execução)
   int get seriesAtual => it.series + (_extra[ei] ?? 0);
   bool pausado = false;
+  bool _terminou = false;
+  final Map<int, _ProgEx> _prog = {}; // progresso de exercícios deixados pela metade
   double volume = 0;
   // Série crescente: 3-4-5-6-7 reps com 15 s de pausa (total 25), só na última série.
   static const _crescReps = [3, 4, 5, 6, 7];
@@ -1783,6 +1829,15 @@ class _RunEstado extends State<RunTela> {
   @override
   void initState() {
     super.initState();
+    final salvo = _RunSalvo.atual;
+    final continua = salvo != null &&
+        salvo.dia == widget.dia.nome &&
+        salvo.data == chaveData(DateTime.now()) &&
+        salvo.livre == widget.livre;
+    if (continua) {
+      _restaurar(salvo!);
+      if (widget.daqui) _irPara(widget.inicio);
+    } else {
     // Fila: só os exercícios que ainda faltam hoje (se já houve treino parcial).
     final n = widget.dia.itens.length;
     final todos = [for (var k = 0; k < n; k++) k];
@@ -1800,6 +1855,7 @@ class _RunEstado extends State<RunTela> {
     _fila = pos > 0
         ? [for (var k = 0; k < base.length; k++) base[(pos + k) % base.length]]
         : base;
+    }
     _carregar();
     _t = Timer.periodic(const Duration(seconds: 1), (_) {
       if (pausado) return;
@@ -1814,8 +1870,79 @@ class _RunEstado extends State<RunTela> {
     });
   }
 
+  void _restaurar(_RunSalvo s) {
+    _fila = List<int>.of(s.fila);
+    si = s.si;
+    feitasSeries = s.feitasSeries;
+    volume = s.volume;
+    pausado = s.pausado;
+    _rpeNome.addAll(s.rpe);
+    _extra.addAll(s.extra);
+    resumo.addAll(s.resumo);
+    _cargasEx.addAll(s.cargasEx);
+    _recordes.addAll(s.recordes);
+    _prog.addAll(s.prog);
+    // O cronômetro segue contando enquanto a tela esteve fechada.
+    final dec = DateTime.now().difference(s.saiuEm).inSeconds;
+    seg = s.seg + (s.pausado ? 0 : dec);
+    descanso = s.pausado ? s.descanso : (s.descanso > dec ? s.descanso - dec : 0);
+  }
+
+  void _salvarProgresso() {
+    if (si > 0 || _cargasEx.isNotEmpty) {
+      _prog[ei] = _ProgEx(si, List<double>.of(_cargasEx));
+    }
+    _cargasEx.clear();
+  }
+
+  void _restaurarProgresso() {
+    final p = _prog.remove(ei);
+    si = p?.si ?? 0;
+    _cargasEx
+      ..clear()
+      ..addAll(p?.cargas ?? const <double>[]);
+  }
+
+  /// Vai direto para o exercício [k]; os que ficaram para trás continuam na fila.
+  void _irPara(int k) {
+    if (_fila.isNotEmpty && _fila.first == k) return;
+    _salvarProgresso();
+    final pos = _fila.indexOf(k);
+    if (pos > 0) {
+      _fila = [..._fila.sublist(pos), ..._fila.sublist(0, pos)];
+    } else if (pos < 0) {
+      _fila = [k, ..._fila];
+    }
+    descanso = 0;
+    _cresc = false;
+    _crescEtapa = 0;
+    _crescPausa = 0;
+    _restaurarProgresso();
+  }
+
   @override
   void dispose() {
+    if (!_terminou) {
+      _RunSalvo.atual = _RunSalvo(
+        dia: widget.dia.nome,
+        data: chaveData(DateTime.now()),
+        livre: widget.livre,
+        pausado: pausado,
+        fila: List<int>.of(_fila),
+        si: si,
+        seg: seg,
+        descanso: descanso,
+        feitasSeries: feitasSeries,
+        rpe: Map<String, String>.of(_rpeNome),
+        extra: Map<int, int>.of(_extra),
+        volume: volume,
+        resumo: List<_ResumoEx>.of(resumo),
+        cargasEx: List<double>.of(_cargasEx),
+        recordes: Set<String>.of(_recordes),
+        prog: Map<int, _ProgEx>.of(_prog),
+        saiuEm: DateTime.now(),
+      );
+    }
     _t.cancel();
     _carga.dispose();
     super.dispose();
@@ -1853,6 +1980,7 @@ class _RunEstado extends State<RunTela> {
         _fila.removeAt(0);
         si = 0;
         descanso = app.descanso;
+        _restaurarProgresso();
         _carregar();
       });
     } else {
@@ -1866,6 +1994,7 @@ class _RunEstado extends State<RunTela> {
       _fila.add(_fila.removeAt(0));
       si = 0;
       descanso = 0;
+      _restaurarProgresso();
       _carregar();
     });
   }
@@ -1895,6 +2024,8 @@ class _RunEstado extends State<RunTela> {
   }
 
   Future<void> _fim({bool parcial = false}) async {
+    _terminou = true;
+    _RunSalvo.atual = null;
     _t.cancel();
     final total = widget.dia.itens.fold<int>(0, (s, e) => s + e.series) +
         _extra.values.fold<int>(0, (s, e) => s + e);
@@ -1904,6 +2035,14 @@ class _RunEstado extends State<RunTela> {
           it.reps, List<double>.from(_cargasEx)));
       _cargasEx.clear();
     }
+    // Exercícios deixados pela metade (ao trocar de exercício) entram como parciais.
+    for (final e in _prog.entries) {
+      if (e.value.cargas.isEmpty) continue;
+      final item = widget.dia.itens[e.key];
+      resumo.add(_ResumoEx(app.ex(item.exId)?.nome ?? item.nome, item.grupo,
+          item.reps, List<double>.of(e.value.cargas)));
+    }
+    _prog.clear();
     if (parcial && feitasSeries == 0) {
       if (!mounted) return;
       Navigator.of(context).popUntil((r) => r.isFirst);
