@@ -160,6 +160,10 @@ class Sessao {
     if (km != null && km! > 0) {
       partes.add('${km!.toStringAsFixed(2).replaceAll('.', ',')} km');
     }
+    if (km != null && km! >= 0.05 && seg > 0) {
+      final r = (seg / km!).round();
+      partes.add("${r ~/ 60}'${(r % 60).toString().padLeft(2, '0')}\" /km");
+    }
     if (kcal != null) partes.add('$kcal kcal');
     if (fc != null && fc! > 0) partes.add('$fc bpm');
     return partes.join(' • ');

@@ -2591,7 +2591,7 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
   Widget _descansoW() {
     return Column(
       children: [
-        const Center(child: Text('Descanso', style: TextStyle(color: kMudo))),
+        const Center(child: _DescansoPulsante()),
         Center(child: Text(_fmt(descanso), style: titulo(96))),
         Row(
           children: [
@@ -2613,6 +2613,76 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// "Descanso" pulsando em branco metálico (brilho que desliza + pulso suave).
+class _DescansoPulsante extends StatefulWidget {
+  const _DescansoPulsante();
+  @override
+  State<_DescansoPulsante> createState() => _DescansoPulsanteEstado();
+}
+
+class _DescansoPulsanteEstado extends State<_DescansoPulsante>
+    with TickerProviderStateMixin {
+  late final AnimationController _pulso = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1300))
+    ..repeat(reverse: true);
+  late final AnimationController _brilho = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 2600))
+    ..repeat();
+
+  @override
+  void dispose() {
+    _pulso.dispose();
+    _brilho.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_pulso, _brilho]),
+      builder: (context, _) {
+        final t = Curves.easeInOut.transform(_pulso.value);
+        final b = _brilho.value;
+        return Opacity(
+          opacity: 0.6 + 0.4 * t,
+          child: Transform.scale(
+            scale: 1.0 + 0.08 * t,
+            child: ShaderMask(
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (r) => LinearGradient(
+                begin: Alignment(-2.0 + 3.0 * b, -0.4),
+                end: Alignment(-0.6 + 3.0 * b, 0.4),
+                tileMode: TileMode.repeated,
+                colors: const [
+                  Color(0xFF8C9199),
+                  Color(0xFFFFFFFF),
+                  Color(0xFFC9CDD3),
+                  Color(0xFF8C9199),
+                ],
+                stops: const [0.0, 0.35, 0.65, 1.0],
+              ).createShader(r),
+              child: Text(
+                'Descanso',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 3,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                        color: Colors.white.withOpacity(0.35 * t),
+                        blurRadius: 14),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
