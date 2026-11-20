@@ -1890,7 +1890,7 @@ class _CardapioTelaEstado extends State<CardapioTela> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    style: estiloContorno,
+                    style: estiloContornoFino,
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1907,7 +1907,7 @@ class _CardapioTelaEstado extends State<CardapioTela> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
-                    style: estiloContorno,
+                    style: estiloContornoFino,
                     onPressed: () async {
                       final e = await Navigator.push<Map<String, dynamic>>(
                         context,
