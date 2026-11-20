@@ -146,3 +146,8 @@ VERSAO 1.14.2 - IDENTIDADE VISUAL
 VERSAO 1.14.5
 - Biblioteca: ao tocar em um exercicio, o video de execucao aparece no topo da folha, acima de "Ver anatomia" (vale para todos os exercicios que tem video).
 - 8 videos novos: supino reto com barra, supino com halteres, crucifixo com halteres, flexao de braco, puxada alta com pegada neutra, remada articulada com apoio no peito, remada curvada e remada unilateral com halter (agora 31 videos).
+
+
+VERSAO 1.14.6
+- 5 videos novos de execucao (agora 36): desenvolvimento com halteres, elevacao frontal com halter, crucifixo inverso com halteres, elevacao lateral na maquina e pullover na maquina.
+- Aparecem sozinhos na folha do exercicio do dia, em "Ver execucao" durante o treino e na Biblioteca (o app liga o video ao exercicio pelo nome do arquivo).
