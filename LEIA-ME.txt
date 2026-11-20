@@ -141,3 +141,8 @@ VERSAO 1.14.2 - IDENTIDADE VISUAL
 - Aplicado o anel azul luminoso animado da Biblioteca nas categorias selecionadas da Alimentacao.
 - Aplicado o mesmo contorno animado nos titulos das secoes Treinos e Cardio do Historico.
 - Mantido o comportamento de selecao e filtros existentes.
+
+
+VERSAO 1.14.5
+- Biblioteca: ao tocar em um exercicio, o video de execucao aparece no topo da folha, acima de "Ver anatomia" (vale para todos os exercicios que tem video).
+- 8 videos novos: supino reto com barra, supino com halteres, crucifixo com halteres, flexao de braco, puxada alta com pegada neutra, remada articulada com apoio no peito, remada curvada e remada unilateral com halter (agora 31 videos).

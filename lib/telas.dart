@@ -2792,13 +2792,16 @@ class _BibEstado extends State<BibliotecaTela> {
   void _detalhe(Exercicio e) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: kSuperf,
-      builder: (c) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      builder: (c) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            VideoExercicio(exId: e.id, nome: e.nome, altura: 300, abaixo: 16),
             Text(e.nome, style: titulo(30)),
             const SizedBox(height: 8),
             Text('Grupo: ${e.grupo}', style: const TextStyle(color: kMudo)),
@@ -2820,6 +2823,7 @@ class _BibEstado extends State<BibliotecaTela> {
               label: const Text('Ver anatomia'),
             ),
           ],
+          ),
         ),
       ),
     );
