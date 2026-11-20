@@ -9,8 +9,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:google_fonts/google_fonts.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart'
-    show PdfDocument, PdfTextExtractor;
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'state.dart';
 import 'extras.dart' show MeuPlanoTela, fmtNum, fmtTempo;
 import 'edicao.dart';

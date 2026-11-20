@@ -147,3 +147,9 @@ VERSAO 1.14.7
 - Tela Plano de treino permite exportar o plano semanal atual em PDF compartilhavel.
 - Exportacao usa os dias e exercicios cadastrados no momento da exportacao.
 - Biblioteca: videos dos exercicios exibidos no detalhe; adicionados 13 videos das versoes 1.14.5 e 1.14.6.
+
+
+--- v1.14.8 ---
+* Corrigido o import da biblioteca Syncfusion PDF: as classes de fonte usadas na exportação agora ficam disponíveis.
+* Mantida a exportação dinâmica do plano semanal atual em PDF, lendo os dias e exercícios cadastrados no momento da exportação.
+* Mantidos os 13 vídeos adicionados nas versões 1.14.5 e 1.14.6 e os demais arquivos da base 1.14.7.
