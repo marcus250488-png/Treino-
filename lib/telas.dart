@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:google_fonts/google_fonts.dart';
@@ -3004,6 +3008,71 @@ class _ImpEstado extends State<ImportarTela> {
     widget.irPara(0);
   }
 
+
+  Future<void> _exportarPlano() async {
+    if (app.plano.isEmpty || app.plano.every((d) => d.itens.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seu plano ainda não tem exercícios para exportar.')),
+      );
+      return;
+    }
+    final doc = PdfDocument();
+    final titleFont = PdfStandardFont(PdfFontFamily.helvetica, 20, style: PdfFontStyle.bold);
+    final dayFont = PdfStandardFont(PdfFontFamily.helvetica, 14, style: PdfFontStyle.bold);
+    final bodyFont = PdfStandardFont(PdfFontFamily.helvetica, 10);
+    final mutedFont = PdfStandardFont(PdfFontFamily.helvetica, 9);
+    var page = doc.pages.add();
+    var y = 34.0;
+    void header() {
+      page.graphics.drawString('MEU TREINO', titleFont,
+          bounds: Rect.fromLTWH(28, y, 500, 30));
+      y += 30;
+      page.graphics.drawString('Plano semanal • Exportado em ${DateTime.now().day.toString().padLeft(2, '0')}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().year}',
+          mutedFont, bounds: Rect.fromLTWH(28, y, 520, 18));
+      y += 28;
+    }
+    header();
+    for (final dia in app.plano) {
+      if (dia.itens.isEmpty) continue;
+      if (y > 730) {
+        page = doc.pages.add();
+        y = 30;
+        header();
+      }
+      page.graphics.drawString(dia.nome, dayFont,
+          bounds: Rect.fromLTWH(28, y, 520, 22));
+      y += 20;
+      if (dia.foco.trim().isNotEmpty) {
+        page.graphics.drawString('Foco: ${dia.foco}', mutedFont,
+            bounds: Rect.fromLTWH(28, y, 520, 16));
+        y += 17;
+      }
+      for (var i = 0; i < dia.itens.length; i++) {
+        if (y > 760) {
+          page = doc.pages.add();
+          y = 30;
+          header();
+        }
+        final ex = dia.itens[i];
+        final line = '${i + 1}. ${ex.nome}';
+        page.graphics.drawString(line, bodyFont,
+            bounds: Rect.fromLTWH(36, y, 500, 16));
+        y += 15;
+        page.graphics.drawString('${ex.grupo}  •  ${ex.series} séries  •  ${ex.reps} repetições',
+            mutedFont, bounds: Rect.fromLTWH(48, y, 490, 15));
+        y += 21;
+      }
+      y += 12;
+    }
+    final bytes = await doc.save();
+    doc.dispose();
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/Meu_Treino_Plano_Semanal.pdf');
+    await file.writeAsBytes(bytes, flush: true);
+    await Share.shareXFiles([XFile(file.path, mimeType: 'application/pdf')],
+        text: 'Meu plano de treino atualizado');
+  }
+
   @override
   Widget build(BuildContext context) {
     final semMatch =
@@ -3012,13 +3081,19 @@ class _ImpEstado extends State<ImportarTela> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
         children: [
-          Text('Importar treino', style: titulo(34)),
+          Text('Plano de treino', style: titulo(34)),
           const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _exportarPlano,
+            icon: const Icon(Icons.picture_as_pdf),
+            label: const Text('Exportar plano atual em PDF'),
+          ),
+          const SizedBox(height: 10),
           FilledButton.icon(
             style: estiloPrimario,
             onPressed: _escolher,
             icon: const Icon(Icons.upload_file),
-            label: Text(arq == null ? 'Escolher PDF' : 'Escolher outro PDF'),
+            label: Text(arq == null ? 'Importar treino em PDF' : 'Escolher outro PDF'),
           ),
           if (erro != null)
             Padding(
