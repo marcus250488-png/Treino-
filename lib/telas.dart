@@ -1750,11 +1750,13 @@ class _ResumoEx {
 class _ProgEx {
   final int si;
   final List<double> cargas;
-  _ProgEx(this.si, this.cargas);
-  Map<String, dynamic> toJson() => {'si': si, 'cargas': cargas};
+  final List<int> reps;
+  _ProgEx(this.si, this.cargas, [this.reps = const <int>[]]);
+  Map<String, dynamic> toJson() => {'si': si, 'cargas': cargas, 'reps': reps};
   factory _ProgEx.fromJson(Map<String, dynamic> j) => _ProgEx(
         j['si'] as int,
         [for (final c in (j['cargas'] as List)) (c as num).toDouble()],
+        [for (final r in (j['reps'] as List? ?? const [])) (r as num).toInt()],
       );
 }
 
@@ -1770,6 +1772,7 @@ class _RunSalvo {
   final double volume;
   final List<_ResumoEx> resumo;
   final List<double> cargasEx;
+  final List<int> repsEx;
   final Set<String> recordes;
   final Map<int, _ProgEx> prog;
   final DateTime saiuEm;
@@ -1788,6 +1791,7 @@ class _RunSalvo {
     required this.volume,
     required this.resumo,
     required this.cargasEx,
+    required this.repsEx,
     required this.recordes,
     required this.prog,
     required this.saiuEm,
@@ -1808,6 +1812,7 @@ class _RunSalvo {
         'volume': volume,
         'resumo': [for (final r in resumo) r.toJson()],
         'cargasEx': cargasEx,
+        'repsEx': repsEx,
         'recordes': recordes.toList(),
         'prog': prog.map((k, v) => MapEntry('$k', v.toJson())),
         'saiuEm': saiuEm.toIso8601String(),
@@ -1834,6 +1839,7 @@ class _RunSalvo {
             _ResumoEx.fromJson(Map<String, dynamic>.from(r as Map))
         ],
         cargasEx: [for (final c in (j['cargasEx'] as List)) (c as num).toDouble()],
+        repsEx: [for (final r in (j['repsEx'] as List? ?? const [])) (r as num).toInt()],
         recordes: {for (final r in (j['recordes'] as List)) r as String},
         prog: {
           for (final e in (j['prog'] as Map).entries)
@@ -1919,6 +1925,8 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
 
   late Timer _t;
   final _carga = TextEditingController();
+  final _repeticoes = TextEditingController();
+  final List<int> _repsEx = [];
   final List<_ResumoEx> resumo = [];
   final List<double> _cargasEx = [];
   final Set<String> _recordes = {}; // exercícios que bateram o recorde nesta sessão
@@ -1990,6 +1998,7 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     _extra.addAll(s.extra);
     resumo.addAll(s.resumo);
     _cargasEx.addAll(s.cargasEx);
+    _repsEx.addAll(s.repsEx);
     _recordes.addAll(s.recordes);
     _prog.addAll(s.prog);
     // O cronômetro segue contando enquanto a tela esteve fechada.
@@ -2000,9 +2009,10 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
 
   void _salvarProgresso() {
     if (si > 0 || _cargasEx.isNotEmpty) {
-      _prog[ei] = _ProgEx(si, List<double>.of(_cargasEx));
+      _prog[ei] = _ProgEx(si, List<double>.of(_cargasEx), List<int>.of(_repsEx));
     }
     _cargasEx.clear();
+    _repsEx.clear();
   }
 
   void _restaurarProgresso() {
@@ -2011,6 +2021,9 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     _cargasEx
       ..clear()
       ..addAll(p?.cargas ?? const <double>[]);
+    _repsEx
+      ..clear()
+      ..addAll(p?.reps ?? const <int>[]);
   }
 
   /// Vai direto para o exercício [k]; os que ficaram para trás continuam na fila.
@@ -2045,6 +2058,7 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
         volume: volume,
         resumo: List<_ResumoEx>.of(resumo),
         cargasEx: List<double>.of(_cargasEx),
+        repsEx: List<int>.of(_repsEx),
         recordes: Set<String>.of(_recordes),
         prog: Map<int, _ProgEx>.of(_prog),
         saiuEm: DateTime.now(),
@@ -2072,10 +2086,15 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     }
     _t.cancel();
     _carga.dispose();
+    _repeticoes.dispose();
     super.dispose();
   }
 
-  void _carregar() => _carga.text = app.cargas[it.exId] ?? '';
+  void _carregar() {
+    _carga.text = app.cargas[it.exId] ?? '';
+    final padrao = int.tryParse(it.reps.replaceAll(RegExp(r'[^0-9]'), '')) ?? 10;
+    _repeticoes.text = '$padrao';
+  }
 
   Future<void> _concluir() async {
     app.setCarga(it.exId, _carga.text.trim());
@@ -2083,7 +2102,11 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     final recAtual = app.recorde(app.ex(it.exId)?.nome ?? it.nome);
     if (cg > 0 && recAtual != null && cg > recAtual) _recordes.add(it.exId);
     final usouCresc = _cresc;
-    volume += cg * (usouCresc ? 25 : repsMedio(it.reps));
+    final repsFeitas = usouCresc
+        ? 25
+        : (int.tryParse(_repeticoes.text.trim()) ?? repsMedio(it.reps));
+    volume += cg * repsFeitas;
+    _repsEx.add(repsFeitas);
     feitasSeries++;
     _cargasEx.add(cg);
     _cresc = false;
@@ -2091,9 +2114,10 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     _crescPausa = 0;
     if (si + 1 >= seriesAtual) {
       resumo.add(_ResumoEx(app.ex(it.exId)?.nome ?? it.nome, it.grupo,
-          it.reps, List<double>.from(_cargasEx),
+          _repsEx.join(' / '), List<double>.from(_cargasEx),
           cresc: usouCresc));
       _cargasEx.clear();
+      _repsEx.clear();
       await _perguntarRpe();
       if (!mounted) return;
     }
@@ -2161,15 +2185,16 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     // Exercício que ficou pela metade entra no resumo como parcial.
     if (_cargasEx.isNotEmpty) {
       resumo.add(_ResumoEx(app.ex(it.exId)?.nome ?? it.nome, it.grupo,
-          it.reps, List<double>.from(_cargasEx)));
+          _repsEx.isEmpty ? it.reps : _repsEx.join(' / '), List<double>.from(_cargasEx)));
       _cargasEx.clear();
+      _repsEx.clear();
     }
     // Exercícios deixados pela metade (ao trocar de exercício) entram como parciais.
     for (final e in _prog.entries) {
       if (e.value.cargas.isEmpty) continue;
       final item = widget.dia.itens[e.key];
       resumo.add(_ResumoEx(app.ex(item.exId)?.nome ?? item.nome, item.grupo,
-          item.reps, List<double>.of(e.value.cargas)));
+          e.value.reps.isEmpty ? item.reps : e.value.reps.join(' / '), List<double>.of(e.value.cargas)));
     }
     _prog.clear();
     if (parcial && feitasSeries == 0) {
@@ -2439,8 +2464,21 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(it.reps, style: titulo(54)),
-                  const Text('Repetições', style: TextStyle(color: kMudo)),
+                  SizedBox(
+                    width: 150,
+                    child: TextField(
+                      controller: _repeticoes,
+                      keyboardType: TextInputType.number,
+                      style: titulo(54),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: '15',
+                      ),
+                    ),
+                  ),
+                  const Text('Repetições • toque para editar',
+                      style: TextStyle(color: kMudo, fontSize: 12)),
                 ],
               ),
             ),
