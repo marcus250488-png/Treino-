@@ -2104,7 +2104,7 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     final usouCresc = _cresc;
     final repsFeitas = usouCresc
         ? 25
-        : (int.tryParse(_repeticoes.text.trim()) ?? repsMedio(it.reps));
+        : (int.tryParse(_repeticoes.text.trim()) ?? repsMedio(it.reps).round());
     volume += cg * repsFeitas;
     _repsEx.add(repsFeitas);
     feitasSeries++;
