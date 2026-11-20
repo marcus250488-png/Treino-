@@ -1112,6 +1112,63 @@ class AppState extends ChangeNotifier {
     await _salvarNutri();
   }
 
+  /// Preenche o cardápio inicial do usuário apenas na primeira vez.
+  /// Se já houver qualquer refeição salva, preserva integralmente as escolhas existentes.
+  Future<void> carregarCardapioPadrao() async {
+    // Instalação nova: cria as cinco refeições completas.
+    if (cardapio.isEmpty) {
+      cardapio = {
+      'cafe': [
+        {'t': 'a', 'id': 'f_ovo_mexido', 'q': 110.0},
+        {'t': 'a', 'id': 'f_pao_frances', 'q': 50.0},
+        {'t': 'a', 'id': 'f_leite_integral', 'q': 200.0},
+        {'t': 'a', 'id': 'f_banana_prata', 'q': 70.0},
+      ],
+      'almoco': [
+        {'t': 'a', 'id': 'f_arroz_branco_cozido', 'q': 150.0},
+        {'t': 'a', 'id': 'f_feijao_carioca_cozido', 'q': 100.0},
+        {'t': 'a', 'id': 'f_peito_de_frango_grelhado', 'q': 160.0},
+        {'t': 'a', 'id': 'f_cenoura_cozida', 'q': 100.0},
+        {'t': 'a', 'id': 'f_azeite_de_oliva', 'q': 5.0},
+      ],
+      'cafe_tarde': [
+        {'t': 'a', 'id': 'f_ovo_mexido', 'q': 110.0},
+        {'t': 'a', 'id': 'f_pao_frances', 'q': 50.0},
+        {'t': 'a', 'id': 'f_leite_integral', 'q': 200.0},
+        {'t': 'a', 'id': 'f_maca_com_casca', 'q': 150.0},
+      ],
+      'lanche': [
+        {'t': 'a', 'id': 'f_pao_frances', 'q': 40.0},
+        {'t': 'a', 'id': 'f_leite_integral', 'q': 150.0},
+        {'t': 'a', 'id': 'f_banana_prata', 'q': 70.0},
+      ],
+      'jantar': [
+        {'t': 'a', 'id': 'f_arroz_branco_cozido', 'q': 100.0},
+        {'t': 'a', 'id': 'f_feijao_carioca_cozido', 'q': 80.0},
+        {'t': 'a', 'id': 'f_carne_moida_patinho_cozida', 'q': 120.0},
+        {'t': 'a', 'id': 'f_cenoura_cozida', 'q': 100.0},
+        {'t': 'a', 'id': 'f_azeite_de_oliva', 'q': 3.0},
+      ],
+        'outros': <dynamic>[],
+      };
+      await _salvarNutri();
+      return;
+    }
+
+    // Atualização de versão: adiciona somente a nova refeição, sem apagar
+    // ou mover alimentos que o usuário já cadastrou nas demais refeições.
+    if (!cardapio.containsKey('cafe_tarde')) {
+      cardapio['cafe_tarde'] = [
+        {'t': 'a', 'id': 'f_ovo_mexido', 'q': 110.0},
+        {'t': 'a', 'id': 'f_pao_frances', 'q': 50.0},
+        {'t': 'a', 'id': 'f_leite_integral', 'q': 200.0},
+        {'t': 'a', 'id': 'f_maca_com_casca', 'q': 150.0},
+      ];
+      cardapio['outros'] ??= <dynamic>[];
+      await _salvarNutri();
+    }
+  }
+
   List<dynamic> _listaCardapio(String ref) =>
       (cardapio[ref] ??= <dynamic>[]) as List<dynamic>;
 

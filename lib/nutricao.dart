@@ -518,6 +518,8 @@ class _NutricaoEstado extends State<NutricaoTela> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(r.nome, style: txtEscuro),
+                  if (r.horario.isNotEmpty)
+                    Text(r.horario, style: const TextStyle(color: Colors.black54, fontSize: 11)),
                   Text(
                     alvo > 0
                         ? '${fmtD(tot)}/${fmtD(alvo)} kcal'
@@ -1755,8 +1757,19 @@ class _ReceitaDetalheEstado extends State<ReceitaDetalheTela> {
 // ============================================================
 // Meu cardápio (refeições fixas)
 // ============================================================
-class CardapioTela extends StatelessWidget {
+class CardapioTela extends StatefulWidget {
   const CardapioTela({super.key});
+
+  @override
+  State<CardapioTela> createState() => _CardapioTelaEstado();
+}
+
+class _CardapioTelaEstado extends State<CardapioTela> {
+  @override
+  void initState() {
+    super.initState();
+    app.carregarCardapioPadrao();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1768,9 +1781,29 @@ class CardapioTela extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 40),
             children: [
-              const Text(
-                'Monte aqui o que você costuma comer em cada refeição. No dia a dia, use o botão "Usar meu cardápio" para lançar tudo de uma vez, com os macros calculados.',
-                style: TextStyle(color: kMudo),
+              Vidro(
+                padding: const EdgeInsets.all(16),
+                raio: 20,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      const Icon(Icons.track_changes, color: kAzul),
+                      const SizedBox(width: 8),
+                      Text('Plano alimentar sugerido', style: titulo(19)),
+                    ]),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Cardápio inicial configurado para cerca de 2.500 kcal/dia, distribuído em cinco refeições principais. A seção Outros fica disponível para extras. As quantidades são editáveis e os macros são calculados pelos alimentos cadastrados.',
+                      style: TextStyle(color: kMudo, height: 1.35),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Treino às 6h • Café da manhã às 7h30 (pós-treino). Toque em um alimento para ajustar a quantidade ou no X para removê-lo.',
+                      style: TextStyle(color: kMudo, fontSize: 12, height: 1.35),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 14),
               for (final r in kRefeicoes) _secao(context, r),
@@ -1800,7 +1833,16 @@ class CardapioTela extends StatelessWidget {
                   decoration: BoxDecoration(color: r.cor, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 10),
-                Expanded(child: Text(r.nome, style: titulo(26))),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(r.nome, style: titulo(24)),
+                      if (r.horario.isNotEmpty)
+                        Text(r.horario, style: const TextStyle(color: kMudo, fontSize: 11)),
+                    ],
+                  ),
+                ),
                 Text('${fmtD(tot.kcal)} kcal',
                     style: const TextStyle(color: kMudo)),
               ],
