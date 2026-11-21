@@ -7,6 +7,7 @@ import 'telas.dart';
 import 'transicao.dart';
 import 'nutricao.dart';
 import 'passos.dart';
+import 'sono_calendario.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -184,6 +185,7 @@ class _ShellEstado extends State<Shell> with SingleTickerProviderStateMixin {
                 const EvolucaoTela(),
                 const BibliotecaTela(),
                 const NutricaoTela(),
+                const SonoCalendarioTela(),
                 MaisTela(irPara: _ir),
               ],
             ),
@@ -204,7 +206,8 @@ class _ShellEstado extends State<Shell> with SingleTickerProviderStateMixin {
                       _btn(1, Icons.show_chart, 'Evolução'),
                       _btn(2, Icons.fitness_center, 'Biblioteca'),
                       _btn(3, Icons.restaurant_menu, 'Nutrição'),
-                      _btn(4, Icons.more_horiz, 'Mais'),
+                      _btn(4, Icons.bedtime_rounded, 'Sono'),
+                      _btn(5, Icons.more_horiz, 'Mais'),
                     ],
                   ),
                 ),

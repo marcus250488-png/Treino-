@@ -406,6 +406,7 @@ class AppState extends ChangeNotifier {
   Map<String, String> cargas = {};
   Map<String, String> obs = {};
   List<Sessao> sessoes = [];
+  List<Map<String, dynamic>> sono = [];
   List<Avaliacao> avaliacoes = [];
   Map<String, int> agua = {};
   // XP / premiação: cada item é {id, ts, tipo, titulo, sub, xp}
@@ -616,6 +617,7 @@ class AppState extends ChangeNotifier {
         'meta_agua': _p.getInt(_k('meta_agua')),
         'meta_peso': _p.getDouble(_k('meta_peso')),
         'sessoes': _p.getString(_k('sessoes')),
+        'sono': _p.getString(_k('sono')),
         'avaliacoes': _p.getString(_k('avaliacoes')),
         'agua': _p.getString(_k('agua')),
         'obs': _p.getString(_k('obs')),
@@ -642,6 +644,7 @@ class AppState extends ChangeNotifier {
         'meta_agua': metaAgua,
         'meta_peso': metaPeso,
         'sessoes': jsonEncode(sessoes.map((e) => e.toJson()).toList()),
+        'sono': jsonEncode(sono),
         'avaliacoes': jsonEncode(avaliacoes.map((e) => e.toJson()).toList()),
         'agua': jsonEncode(agua),
         'obs': jsonEncode(obs),
@@ -707,6 +710,7 @@ class AppState extends ChangeNotifier {
     descanso = (d['descanso'] as num?)?.toInt() ?? 75;
     metaAgua = (d['meta_agua'] as num?)?.toInt() ?? 2500;
     metaPeso = (d['meta_peso'] as num?)?.toDouble();
+    sono = _lista(d['sono']).map((e) => Map<String, dynamic>.from(e as Map)).toList();
     sessoes = _lista(d['sessoes'])
         .map((e) => Sessao.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
@@ -753,6 +757,7 @@ class AppState extends ChangeNotifier {
       await _p.remove(_k('meta_peso'));
     }
     await _p.setString(_k('sessoes'), m['sessoes'] as String);
+    await _p.setString(_k('sono'), m['sono'] as String);
     await _p.setString(_k('avaliacoes'), m['avaliacoes'] as String);
     await _p.setString(_k('agua'), m['agua'] as String);
     await _p.setString(_k('obs'), m['obs'] as String);
@@ -860,6 +865,7 @@ class AppState extends ChangeNotifier {
       plano = ((m['plano'] as List?) ?? const [])
           .map((e) => Dia.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
+      sono = ((m['sono'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
       sessoes = ((m['sessoes'] as List?) ?? const [])
           .map((e) => Sessao.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
@@ -1637,6 +1643,9 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> salvarSono(Map<String, dynamic> r) async { final k = r['data'] as String; sono.removeWhere((e) => e['data'] == k); sono.add(Map<String,dynamic>.from(r)); await _p.setString(_k('sono'), jsonEncode(sono)); notifyListeners(); }
+  Future<void> excluirSono(String k) async { sono.removeWhere((e) => e['data'] == k); await _p.setString(_k('sono'), jsonEncode(sono)); notifyListeners(); }
+
   Future<void> addSessao(Sessao s) async {
     final nivelAntes = nivelTreino.index;
     sessoes.add(s);
@@ -1868,6 +1877,7 @@ class AppState extends ChangeNotifier {
         'conta': {'nome': nome, 'email': email},
         'plano': plano.map((d) => d.toJson()).toList(),
         'sessoes': sessoes.map((e) => e.toJson()).toList(),
+        'sono': sono,
         'avaliacoes': avaliacoes.map((e) => e.toJson()).toList(),
         'agua_ml_por_dia': agua,
         'meta_agua_ml': metaAgua,
