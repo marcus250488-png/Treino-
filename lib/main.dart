@@ -59,13 +59,15 @@ class Shell extends StatefulWidget {
   State<Shell> createState() => _ShellEstado();
 }
 
-class _ShellEstado extends State<Shell> {
+class _ShellEstado extends State<Shell> with SingleTickerProviderStateMixin {
   int i = 0;
   bool _compacto = false;
+  late final AnimationController _pulso;
 
   @override
   void initState() {
     super.initState();
+    _pulso = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat(reverse: true);
     app.xpAviso.addListener(_aoXp);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -81,6 +83,7 @@ class _ShellEstado extends State<Shell> {
   @override
   void dispose() {
     app.xpAviso.removeListener(_aoXp);
+    _pulso.dispose();
     super.dispose();
   }
 
@@ -139,17 +142,28 @@ class _ShellEstado extends State<Shell> {
       button: true,
       child: GestureDetector(
         onTap: () => _ir(n),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: _compacto ? 44 : 54,
-          height: _compacto ? 40 : 48,
-          decoration: BoxDecoration(
-            color: sel ? branco(.18) : Colors.transparent,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: sel
-                ? [BoxShadow(color: kAzul.withOpacity(.30), blurRadius: 16, spreadRadius: 1)]
-                : const [],
-          ),
+        child: AnimatedBuilder(
+          animation: _pulso,
+          builder: (context, child) {
+            final t = sel ? _pulso.value : 0.0;
+            final escala = sel ? 1.0 + (0.055 * t) : 1.0;
+            return Transform.scale(
+              scale: escala,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                width: _compacto ? 44 : 54,
+                height: _compacto ? 40 : 48,
+                decoration: BoxDecoration(
+                  color: sel ? branco(.18 + (.05 * t)) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: sel
+                      ? [BoxShadow(color: kAzul.withOpacity(.20 + (.25 * t)), blurRadius: 12 + (8 * t), spreadRadius: .5 + t)]
+                      : const [],
+                ),
+                child: child,
+              ),
+            );
+          },
           child: Icon(icone, color: sel ? Colors.white : kMudo),
         ),
       ),

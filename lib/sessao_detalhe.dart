@@ -82,7 +82,7 @@ class SessaoDetalheTela extends StatelessWidget {
           if (s.cardio) ..._cardio(s, kcal) else ..._musculacao(s, kcal),
           const SizedBox(height: 20),
           OutlinedButton.icon(
-            style: estiloContorno,
+            style: estiloContornoFino,
             onPressed: () async {
               final ok = await showDialog<bool>(
                 context: context,

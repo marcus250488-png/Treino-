@@ -54,8 +54,7 @@ Widget barraXp(double v, {bool clara = false}) {
                     ? [branco(.55), Colors.white]
                     : const [Color(0xFF1B2F6B), kAzul],
               ),
-              border: Border.all(
-                  color: clara ? Colors.transparent : branco(.75), width: 1.2),
+              // Sem contorno: preenchimento animado com gradiente.
             ),
           ),
         ),
