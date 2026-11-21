@@ -165,7 +165,7 @@ class _ShellEstado extends State<Shell> with SingleTickerProviderStateMixin {
               ),
             );
           },
-          child: Icon(icone, color: sel ? Colors.white : kMudo),
+          child: Icon(icone, size: _compacto ? 19 : 21, color: sel ? Colors.white : kMudo),
         ),
       ),
     );
