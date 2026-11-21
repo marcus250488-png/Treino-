@@ -4,6 +4,14 @@ import 'telas.dart';
 import 'fotos.dart';
 import 'cardio.dart';
 
+final _estiloContornoPlano = OutlinedButton.styleFrom(
+  foregroundColor: Colors.white,
+  minimumSize: const Size.fromHeight(56),
+  shape: const StadiumBorder(),
+  side: const BorderSide(color: Color(0xFF0050E6), width: 1.3),
+  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+);
+
 const _nomesDiaSemana = {
   1: 'Segunda-feira',
   2: 'Terça-feira',
@@ -299,7 +307,7 @@ class _EditarDiaEstado extends State<EditarDiaTela> {
           ListaItensEditavel(itens: dia.itens, onChanged: _mudou),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            style: estiloContorno,
+            style: _estiloContornoPlano,
             onPressed: () => adicionarExercicioA(context, dia.itens, _mudou),
             icon: const Icon(Icons.add),
             label: const Text('Adicionar exercício'),
@@ -417,14 +425,14 @@ class EditarPlanoTela extends StatelessWidget {
                 ),
               const SizedBox(height: 6),
               OutlinedButton.icon(
-                style: estiloContorno,
+                style: _estiloContornoPlano,
                 onPressed: () => _novoDia(context),
                 icon: const Icon(Icons.add),
                 label: const Text('Adicionar dia'),
               ),
               const SizedBox(height: 10),
               OutlinedButton.icon(
-                style: estiloContorno,
+                style: _estiloContornoPlano,
                 onPressed: () => abrirImportar(
                     context,
                     (_) =>
