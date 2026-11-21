@@ -169,9 +169,7 @@ class _SonoCalendarioTelaState extends State<SonoCalendarioTela> {
               Expanded(child: Text('$mesNome ${mes.year}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
               IconButton(onPressed: () => setState(() => mes = DateTime(mes.year, mes.month + 1)), icon: const Icon(Icons.chevron_right)),
             ]),
-            const Row(children: [
-              'D','S','T','Q','Q','S','S'
-            ].map((x) => Expanded(child: Center(child: Text(x, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white60))))).toList()),
+            Row(children: ['D','S','T','Q','Q','S','S'].map((x) => Expanded(child: Center(child: Text(x, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white60))))).toList()),
             const SizedBox(height: 6),
             GridView.builder(
               shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: totalCelulas,
