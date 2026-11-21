@@ -8,7 +8,7 @@ final _estiloContornoPlano = OutlinedButton.styleFrom(
   foregroundColor: Colors.white,
   minimumSize: const Size.fromHeight(56),
   shape: const StadiumBorder(),
-  side: const BorderSide(color: Color(0xFF0050E6), width: 1.3),
+  side: const BorderSide(color: Color(0xFF0050E6), width: 0.8),
   textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
 );
 

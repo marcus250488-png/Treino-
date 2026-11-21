@@ -152,8 +152,8 @@ class _ShellEstado extends State<Shell> with SingleTickerProviderStateMixin {
               scale: escala,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
-                width: _compacto ? 44 : 54,
-                height: _compacto ? 40 : 48,
+                width: _compacto ? 40 : 48,
+                height: _compacto ? 36 : 42,
                 decoration: BoxDecoration(
                   color: sel ? branco(.18 + (.05 * t)) : Colors.transparent,
                   borderRadius: BorderRadius.circular(30),
@@ -165,7 +165,7 @@ class _ShellEstado extends State<Shell> with SingleTickerProviderStateMixin {
               ),
             );
           },
-          child: Icon(icone, size: _compacto ? 19 : 21, color: sel ? Colors.white : kMudo),
+          child: Icon(icone, size: _compacto ? 17 : 18, color: sel ? Colors.white : kMudo),
         ),
       ),
     );
