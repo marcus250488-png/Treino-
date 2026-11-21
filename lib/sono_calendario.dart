@@ -119,7 +119,7 @@ class _SonoCalendarioTelaState extends State<SonoCalendarioTela> {
 
   Widget resumoCard(String titulo, String valor, IconData icone) => Expanded(
     child: Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
-      Icon(icone, color: kAzul), const SizedBox(height: 5),
+      Icon(icone, color: const Color(0xFF1A6CFF)), const SizedBox(height: 5),
       Text(valor, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       Text(titulo, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11)),
     ]))),
@@ -182,7 +182,7 @@ class _SonoCalendarioTelaState extends State<SonoCalendarioTela> {
                 final treino = app.fezAtividade(dt), nutri = app.totalDia(key).kcal > 0, passos = (app.passos[key] ?? 0) > 0;
                 return InkWell(onTap: () => setState(() => dia = dt), child: Container(
                   margin: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(color: sel ? kAzul.withOpacity(.28) : branco(.04), borderRadius: BorderRadius.circular(9), border: Border.all(color: sel ? kAzul : branco(.08))),
+                  decoration: BoxDecoration(color: sel ? const Color(0xFF1A6CFF).withOpacity(.28) : Colors.white.withOpacity(.04), borderRadius: BorderRadius.circular(9), border: Border.all(color: sel ? const Color(0xFF1A6CFF) : Colors.white.withOpacity(.08))),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Text('$n', style: TextStyle(fontWeight: sel ? FontWeight.bold : FontWeight.normal)),
                     Wrap(spacing: 2, children: [
