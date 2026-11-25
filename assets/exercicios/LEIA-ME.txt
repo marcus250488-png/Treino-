@@ -1,0 +1,1 @@
+Fotos dos exercicios: salve como assets/exercicios/<id-do-exercicio>.jpg (ex.: supino-inclinado-maq.jpg).

@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+# Lightweight Gradle launcher for this project. GitHub Actions installs Gradle;
+# on Termux, install Gradle 8.11.1 and this script will use it.
+set -eu
+if command -v gradle >/dev/null 2>&1; then
+  exec gradle "$@"
+fi
+printf '%s\n' 'Gradle 8.11.1 não encontrado.' 'Instale o Gradle 8.11.1 e tente novamente.' >&2
+exit 1

@@ -1,0 +1,35 @@
+name: treino_app
+description: Meu treino - Fase 2
+publish_to: none
+version: 1.14.28+67
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: '>=2.2.0'
+  file_picker: '>=8.0.0 <11.0.0'
+  syncfusion_flutter_pdf: '>=26.1.35'
+  google_fonts: '>=6.2.1'
+  google_sign_in: '>=6.2.1 <7.0.0'
+  http: '>=1.0.0'
+  permission_handler: '>=11.0.0'
+  video_player: '>=2.8.0'
+  geolocator: '>=11.0.0'
+  pedometer: '>=4.0.0'
+  firebase_core: '>=3.0.0'
+  firebase_auth: '>=5.0.0'
+  cloud_firestore: '>=5.0.0'
+  share_plus: '>=10.0.0 <11.0.0'
+  path_provider: '>=2.1.0'
+  cross_file: '>=0.3.4'
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/exercicios.json
+    - assets/anatomia.json
+    - assets/exercicios/
+    - assets/fotos/
+    - assets/videos/
+    - assets/nutri/
+    - assets/nutricao.json

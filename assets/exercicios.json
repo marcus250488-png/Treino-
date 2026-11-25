@@ -1,0 +1,583 @@
+[
+  {
+    "id": "supino-inclinado-maq",
+    "nome": "Supino inclinado na máquina",
+    "grupo": "Peito",
+    "equip": "Máquina",
+    "apelidos": [
+      "supino inclinado maquina",
+      "chest press inclinado"
+    ]
+  },
+  {
+    "id": "supino-reto-maq",
+    "nome": "Supino reto na máquina",
+    "grupo": "Peito",
+    "equip": "Máquina",
+    "apelidos": [
+      "supino reto maquina",
+      "chest press"
+    ]
+  },
+  {
+    "id": "supino-declinado-maq",
+    "nome": "Supino declinado na máquina",
+    "grupo": "Peito",
+    "equip": "Máquina",
+    "apelidos": [
+      "supino declinado maquina"
+    ]
+  },
+  {
+    "id": "crucifixo-maq",
+    "nome": "Crucifixo na máquina (peck deck)",
+    "grupo": "Peito",
+    "equip": "Máquina",
+    "apelidos": [
+      "peck deck",
+      "voador",
+      "crucifixo maquina"
+    ]
+  },
+  {
+    "id": "supino-reto-barra",
+    "nome": "Supino reto com barra",
+    "grupo": "Peito",
+    "equip": "Barra",
+    "apelidos": [
+      "supino reto",
+      "bench press"
+    ]
+  },
+  {
+    "id": "triceps-corda",
+    "nome": "Tríceps na corda",
+    "grupo": "Tríceps",
+    "equip": "Polia",
+    "apelidos": [
+      "triceps pulley corda",
+      "push down corda"
+    ]
+  },
+  {
+    "id": "triceps-frances",
+    "nome": "Tríceps francês",
+    "grupo": "Tríceps",
+    "equip": "Halter",
+    "apelidos": [
+      "triceps testa",
+      "french press"
+    ]
+  },
+  {
+    "id": "triceps-frances-polia",
+    "nome": "Tríceps francês na polia",
+    "grupo": "Tríceps",
+    "equip": "Polia",
+    "apelidos": [
+      "triceps frances corda"
+    ]
+  },
+  {
+    "id": "agachamento-smith",
+    "nome": "Agachamento no Smith",
+    "grupo": "Quadríceps",
+    "equip": "Smith",
+    "apelidos": [
+      "agachamento smith",
+      "agachamento na maquina smith"
+    ]
+  },
+  {
+    "id": "agachamento-livre",
+    "nome": "Agachamento livre",
+    "grupo": "Quadríceps",
+    "equip": "Barra",
+    "apelidos": [
+      "agachamento",
+      "agachamento com barra"
+    ]
+  },
+  {
+    "id": "leg-press",
+    "nome": "Leg press",
+    "grupo": "Quadríceps",
+    "equip": "Máquina",
+    "apelidos": [
+      "leg 45",
+      "leg press 45"
+    ]
+  },
+  {
+    "id": "cadeira-extensora",
+    "nome": "Cadeira extensora",
+    "grupo": "Quadríceps",
+    "equip": "Máquina",
+    "apelidos": [
+      "extensora"
+    ]
+  },
+  {
+    "id": "puxada-alta-aberta",
+    "nome": "Puxada alta aberta",
+    "grupo": "Costas",
+    "equip": "Polia",
+    "apelidos": [
+      "puxada frente aberta",
+      "pulldown",
+      "puxada na frente"
+    ]
+  },
+  {
+    "id": "puxada-neutra",
+    "nome": "Puxada alta com pegada neutra",
+    "grupo": "Costas",
+    "equip": "Polia",
+    "apelidos": [
+      "puxada pegada neutra",
+      "puxada triangulo"
+    ]
+  },
+  {
+    "id": "remada-baixa-maq",
+    "nome": "Remada baixa na máquina",
+    "grupo": "Costas",
+    "equip": "Máquina",
+    "apelidos": [
+      "remada baixa",
+      "remada sentada"
+    ]
+  },
+  {
+    "id": "remada-articulada",
+    "nome": "Remada articulada com apoio no peito",
+    "grupo": "Costas",
+    "equip": "Máquina",
+    "apelidos": [
+      "remada articulada",
+      "remada cavalinho maquina"
+    ]
+  },
+  {
+    "id": "remada-curvada",
+    "nome": "Remada curvada",
+    "grupo": "Costas",
+    "equip": "Barra",
+    "apelidos": [
+      "remada curvada com barra"
+    ]
+  },
+  {
+    "id": "rosca-direta",
+    "nome": "Rosca direta",
+    "grupo": "Bíceps",
+    "equip": "Barra",
+    "apelidos": [
+      "rosca direta barra",
+      "biceps curl"
+    ]
+  },
+  {
+    "id": "rosca-banco-45",
+    "nome": "Rosca no banco 45°",
+    "grupo": "Bíceps",
+    "equip": "Halter",
+    "apelidos": [
+      "rosca inclinada",
+      "rosca banco inclinado"
+    ]
+  },
+  {
+    "id": "rosca-scott-maq",
+    "nome": "Rosca Scott na máquina",
+    "grupo": "Bíceps",
+    "equip": "Máquina",
+    "apelidos": [
+      "rosca scott",
+      "preacher curl maquina"
+    ]
+  },
+  {
+    "id": "rosca-martelo",
+    "nome": "Rosca martelo",
+    "grupo": "Bíceps",
+    "equip": "Halter",
+    "apelidos": [
+      "martelo"
+    ]
+  },
+  {
+    "id": "flexora-sentada",
+    "nome": "Flexora sentada",
+    "grupo": "Posterior de coxa",
+    "equip": "Máquina",
+    "apelidos": [
+      "cadeira flexora"
+    ]
+  },
+  {
+    "id": "mesa-flexora",
+    "nome": "Mesa flexora",
+    "grupo": "Posterior de coxa",
+    "equip": "Máquina",
+    "apelidos": [
+      "flexora deitada"
+    ]
+  },
+  {
+    "id": "stiff",
+    "nome": "Stiff",
+    "grupo": "Posterior de coxa",
+    "equip": "Barra",
+    "apelidos": [
+      "stiff com barra",
+      "stiff com halter",
+      "levantamento terra romeno"
+    ]
+  },
+  {
+    "id": "desenv-maq",
+    "nome": "Desenvolvimento na máquina",
+    "grupo": "Ombros",
+    "equip": "Máquina",
+    "apelidos": [
+      "desenvolvimento de ombro na maquina",
+      "shoulder press maquina"
+    ]
+  },
+  {
+    "id": "elev-lateral-maq",
+    "nome": "Elevação lateral na máquina",
+    "grupo": "Ombros",
+    "equip": "Máquina",
+    "apelidos": [
+      "elevacao lateral alavanca",
+      "elevacao lateral maquina"
+    ]
+  },
+  {
+    "id": "elev-lateral-halter",
+    "nome": "Elevação lateral com halteres",
+    "grupo": "Ombros",
+    "equip": "Halter",
+    "apelidos": [
+      "elevacao lateral"
+    ]
+  },
+  {
+    "id": "elev-lateral-polia",
+    "nome": "Elevação lateral na polia",
+    "grupo": "Ombros",
+    "equip": "Polia",
+    "apelidos": [
+      "elevacao lateral polia",
+      "elevacao lateral cabo",
+      "elevacao lateral crossover"
+    ]
+  },
+  {
+    "id": "crucifixo-inverso-maq",
+    "nome": "Crucifixo inverso na máquina",
+    "grupo": "Ombros",
+    "equip": "Máquina",
+    "apelidos": [
+      "peck deck inverso",
+      "voador inverso"
+    ]
+  },
+  {
+    "id": "panturrilha-leg",
+    "nome": "Panturrilha no leg press",
+    "grupo": "Panturrilha",
+    "equip": "Máquina",
+    "apelidos": [
+      "gemeos no leg press",
+      "pressao de gemeos no leg press"
+    ]
+  },
+  {
+    "id": "panturrilha-pe",
+    "nome": "Panturrilha em pé",
+    "grupo": "Panturrilha",
+    "equip": "Máquina",
+    "apelidos": [
+      "gemeos em pe"
+    ]
+  },
+  {
+    "id": "supino-halter",
+    "nome": "Supino com halteres",
+    "grupo": "Peito",
+    "equip": "Halter",
+    "apelidos": [
+      "supino halter",
+      "chest press halter"
+    ]
+  },
+  {
+    "id": "crucifixo-halter",
+    "nome": "Crucifixo com halteres",
+    "grupo": "Peito",
+    "equip": "Halter",
+    "apelidos": [
+      "crucifixo halter"
+    ]
+  },
+  {
+    "id": "flexao",
+    "nome": "Flexão de braço",
+    "grupo": "Peito",
+    "equip": "Peso corporal",
+    "apelidos": [
+      "flexao",
+      "push up"
+    ]
+  },
+  {
+    "id": "pulldown-corda",
+    "nome": "Pulldown com corda",
+    "grupo": "Costas",
+    "equip": "Polia",
+    "apelidos": [
+      "pulldown",
+      "puxada corda"
+    ]
+  },
+  {
+    "id": "remada-unilateral-halter",
+    "nome": "Remada unilateral com halter",
+    "grupo": "Costas",
+    "equip": "Halter",
+    "apelidos": [
+      "remada serrote"
+    ]
+  },
+  {
+    "id": "pullover-maq",
+    "nome": "Pullover na máquina",
+    "grupo": "Costas",
+    "equip": "Máquina",
+    "apelidos": [
+      "pullover"
+    ]
+  },
+  {
+    "id": "barra-fixa",
+    "nome": "Barra fixa",
+    "grupo": "Costas",
+    "equip": "Peso corporal",
+    "apelidos": [
+      "barra fixa",
+      "pull up"
+    ]
+  },
+  {
+    "id": "desenv-halter",
+    "nome": "Desenvolvimento com halteres",
+    "grupo": "Ombros",
+    "equip": "Halter",
+    "apelidos": [
+      "desenvolvimento halter",
+      "shoulder press"
+    ]
+  },
+  {
+    "id": "elev-frontal-halter",
+    "nome": "Elevação frontal com halter",
+    "grupo": "Ombros",
+    "equip": "Halter",
+    "apelidos": [
+      "elevacao frontal"
+    ]
+  },
+  {
+    "id": "elev-frontal-polia",
+    "nome": "Elevação frontal na polia",
+    "grupo": "Ombros",
+    "equip": "Polia",
+    "apelidos": [
+      "elevacao frontal polia",
+      "elevacao frontal cabo"
+    ]
+  },
+  {
+    "id": "crucifixo-inverso-halter",
+    "nome": "Crucifixo inverso com halteres",
+    "grupo": "Ombros",
+    "equip": "Halter",
+    "apelidos": [
+      "crucifixo inverso halter"
+    ]
+  },
+  {
+    "id": "triceps-testa",
+    "nome": "Tríceps testa",
+    "grupo": "Tríceps",
+    "equip": "Barra",
+    "apelidos": [
+      "triceps testa",
+      "skull crusher"
+    ]
+  },
+  {
+    "id": "triceps-banco",
+    "nome": "Mergulho no banco",
+    "grupo": "Tríceps",
+    "equip": "Peso corporal",
+    "apelidos": [
+      "mergulho",
+      "dips"
+    ]
+  },
+  {
+    "id": "triceps-coice",
+    "nome": "Tríceps coice",
+    "grupo": "Tríceps",
+    "equip": "Halter",
+    "apelidos": [
+      "triceps coice"
+    ]
+  },
+  {
+    "id": "rosca-alternada-halter",
+    "nome": "Rosca alternada com halteres",
+    "grupo": "Bíceps",
+    "equip": "Halter",
+    "apelidos": [
+      "rosca alternada"
+    ]
+  },
+  {
+    "id": "rosca-concentrada",
+    "nome": "Rosca concentrada",
+    "grupo": "Bíceps",
+    "equip": "Halter",
+    "apelidos": [
+      "rosca concentrada"
+    ]
+  },
+  {
+    "id": "agachamento-goblet",
+    "nome": "Agachamento goblet",
+    "grupo": "Quadríceps",
+    "equip": "Halter",
+    "apelidos": [
+      "goblet squat"
+    ]
+  },
+  {
+    "id": "afundo-halter",
+    "nome": "Afundo com halteres",
+    "grupo": "Quadríceps",
+    "equip": "Halter",
+    "apelidos": [
+      "afundo",
+      "lunge"
+    ]
+  },
+  {
+    "id": "rdl-barra",
+    "nome": "Levantamento terra romeno",
+    "grupo": "Posterior de coxa",
+    "equip": "Barra",
+    "apelidos": [
+      "romeno",
+      "rdl"
+    ]
+  },
+  {
+    "id": "elevacao-pelvica",
+    "nome": "Elevação pélvica",
+    "grupo": "Glúteos",
+    "equip": "Barra",
+    "apelidos": [
+      "hip thrust",
+      "elevacao pelvica"
+    ]
+  },
+  {
+    "id": "gluteo-maq",
+    "nome": "Glúteo na máquina",
+    "grupo": "Glúteos",
+    "equip": "Máquina",
+    "apelidos": [
+      "gluteo maquina"
+    ]
+  },
+  {
+    "id": "abducao-maq",
+    "nome": "Abdução de quadril na máquina",
+    "grupo": "Glúteos",
+    "equip": "Máquina",
+    "apelidos": [
+      "abdutora"
+    ]
+  },
+  {
+    "id": "abdominal-supra",
+    "nome": "Abdominal supra",
+    "grupo": "Abdômen",
+    "equip": "Peso corporal",
+    "apelidos": [
+      "abdominal",
+      "crunch"
+    ]
+  },
+  {
+    "id": "prancha",
+    "nome": "Prancha",
+    "grupo": "Abdômen",
+    "equip": "Peso corporal",
+    "apelidos": [
+      "plank"
+    ]
+  },
+  {
+    "id": "elevacao-pernas",
+    "nome": "Elevação de pernas",
+    "grupo": "Abdômen",
+    "equip": "Peso corporal",
+    "apelidos": [
+      "elevacao de pernas"
+    ]
+  },
+  {
+    "id": "hiperextensao",
+    "nome": "Hiperextensão lombar",
+    "grupo": "Lombar",
+    "equip": "Banco",
+    "apelidos": [
+      "hiperextensao",
+      "lombar"
+    ]
+  },
+  {
+    "id": "banco-romano",
+    "nome": "Banco Romano",
+    "grupo": "Lombar",
+    "equip": "Máquina",
+    "apelidos": [
+      "hiperextensão",
+      "banco romano 45"
+    ]
+  },
+  {
+    "id": "agachamento-hack",
+    "nome": "Agachamento hack",
+    "grupo": "Quadríceps",
+    "equip": "Máquina",
+    "apelidos": [
+      "hack squat"
+    ]
+  },
+  {
+    "id": "antebraco",
+    "nome": "Antebraço",
+    "grupo": "Antebraço",
+    "equip": "Polia",
+    "apelidos": [
+      "rosca de punho",
+      "antebraço polia"
+    ]
+  }
+]

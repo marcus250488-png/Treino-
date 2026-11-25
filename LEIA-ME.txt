@@ -1,0 +1,155 @@
+MEU TREINO — PROJETO FLUTTER
+
+Este pacote contém o código-fonte Android/Flutter para versionamento no GitHub.
+A base atual prioriza uso individual/local e já inclui treinos, biblioteca, importação
+de PDF, execução, histórico, avaliação física, gráficos e registro de água.
+
+LEIA PRIMEIRO:
+- docs/ROADMAP_MVP.md: escopo, arquitetura-alvo, módulos futuros e dependências.
+- O login Google atual é opcional e não cria conta vinculada a academia nem sincroniza
+  os dados com servidor. Os registros atuais permanecem no aparelho.
+
+ENVIAR PELO TERMUX:
+1. Extraia a pasta treino_completo no armazenamento do celular.
+2. Abra o Termux e conceda acesso ao armazenamento: termux-setup-storage
+3. Entre na pasta extraída (o caminho exato depende de onde você a colocou).
+4. Inicialize o Git, configure usuário, adicione arquivos, faça commit e conecte ao
+   repositório GitHub conforme os comandos que serão enviados separadamente no chat.
+5. Envie para a branch main. O GitHub Actions executará a compilação.
+
+COMPILAR:
+- flutter pub get
+- flutter analyze
+- flutter build apk --release
+
+APK local:
+build/app/outputs/flutter-apk/app-release.apk
+
+GITHUB ACTIONS:
+O workflow em .github/workflows/build-apk.yml compila o APK em push para main ou
+por execução manual. O APK fica nos artefatos da execução do workflow.
+
+SEGURANÇA:
+Não envie keystore, senhas, tokens, key.properties, local.properties ou dados reais.
+O .gitignore já exclui arquivos locais e artefatos de compilação.
+
+IMPORTANTE:
+O projeto ainda não contém backend multiacademia, agendamento online, pagamentos,
+notificações push, painel de professor/administrador ou geração de treino por IA.
+Esses módulos estão documentados no roadmap e dependem de decisões e serviços reais.
+
+--- v0.6.0 ---
+* Evolução reformulada (lib/evolucao.dart): peso/meta/IMC, medidas com variação,
+  gráfico suave com toque e filtro de período, composição corporal, atalho p/ desempenho.
+* Seu desempenho (lib/desempenho.dart): tela resumo + tela completa (toque em "Seu desempenho").
+* Novo corpo anatômico com mapa de calor (lib/corpo.dart).
+
+--- v1.6.0 ---
+* Treino: topo com foto do dia e resumo (último treino: tempo, séries, kcal).
+* Cada exercício mostra a última carga e, quando há regra, "Tente X kg hoje".
+* Toque no exercício para "Começar daqui"; os já feitos hoje ficam com check e esmaecidos.
+* Botão Começar vira "Ver resumo de hoje" + cardio quando o treino de hoje já foi feito.
+* Cartões com cor e ícone por grupo muscular, equipamento ao lado do grupo.
+* Bloco de aquecimento opcional (liga/desliga no topo do treino).
+* Recorde: aviso durante o treino quando a carga passa da maior já registrada.
+* Configurações: opção "Manter a tela ligada".
+
+--- v1.7.0 ---
+* Pular exercício durante o treino: o pulado volta ao fim da fila.
+* RPE ao terminar cada exercício (Fácil / Ok / Pesado) ajusta a sugestão de carga.
+* Cartão de compartilhamento 9:16 (story / status), ao concluir o treino.
+* Dependências novas: share_plus e path_provider.
+* Resumo do treino no Histórico tem botão Compartilhar.
+
+--- v1.7.1 ---
+* Na lista do treino de hoje, "Excluir e finalizar treino" tira um exercício só da sessão de hoje (com confirmação) e salva o treino como completo, com os exercícios feitos. A rotina não muda.
+
+--- v1.7.2 ---
+* Novo ícone do app (Meu Treino).
+
+--- v1.7.3 ---
+* Botão "Adicionar 1 série" durante o exercício (vale só nesta execução).
+* Treino parcial: ao continuar, o app faz só os exercícios que faltam hoje, e o botão mostra quantos faltam.
+
+--- v1.7.4 ---
+* Dia selecionado na Início: anel mais fino com brilho girando.
+* Foto do cabeçalho do treino desceu para mostrar a cabeça.
+
+--- v1.8.0 ---
+* Água: onda animada que sobe conforme a meta.
+* Biblioteca separada por grupo muscular, com 25 exercícios novos.
+* Tela de anatomia por exercício (músculos, objetivo, execução, dicas). A foto entra em assets/exercicios/<id>.jpg.
+
+--- v1.8.1 ---
+* Biblioteca: cada grupo aparece uma vez só, com nome em destaque animado.
+* Anatomia: desenho do corpo com os músculos destacados para todos os 55 exercícios. A foto entra em cima quando existir.
+
+--- v1.9.0 ---
+* Premiação: cartão "Nível do atleta" na Início, entre Passos de hoje e Treino livre (lib/xp.dart).
+* Histórico de XP: total, nível, missão semanal e eventos por dia (toque no cartão).
+* XP: treino +100 e cardio +60 (1 por dia), missão semanal (treinar 3x) +150, meta de passos +50, água +20, peso +15.
+* Caixa do dia: 1 por dia, prêmio de 100 a 500 XP conforme a sequência de dias seguidos.
+* Aviso rápido "+XP" ao ganhar pontos e quando sobe de nível. O XP começa do zero e é salvo na conta (nuvem).
+
+--- v1.10.0 ---
+* Botão "Não fui treinar hoje" (contorno leve, acima do Começar): hoje vira descanso e o treino
+  vai para o dia seguinte; se o dia seguinte já tinha treino, ele também avança, até cair num dia livre.
+* Cada treino leva a própria foto junto; o dia de descanso usa a foto de descanso automática
+  (conta feminina usa assets/fotos/f_descanso.jpg, se existir; senão usa a padrão).
+* Aviso com "Desfazer" depois de confirmar, e botão "Voltar o treino para este dia" na tela de descanso.
+* O ajuste fica salvo por data (e sincroniza com a nuvem); o plano semanal base não muda.
+
+--- v1.11.0 ---
+* Vídeos de execução por exercício (lib/video_ex.dart): arquivo assets/videos/<id>.mp4 (sem som, 480 px).
+  - Na folha do exercício (toque no exercício do dia): vídeo em loop no topo.
+  - Na execução do treino: botão "Ver execução" abre o vídeo.
+  - Exercício sem arquivo não mostra nada. Conta feminina usa f_<id>.mp4 se existir.
+* Primeiro vídeo: elev-lateral-halter (Elevação lateral com halteres).
+
+--- v1.11.1 ---
+* Segundo vídeo de execução: Elevação lateral na polia (elev-lateral-polia), na folha do exercício e na execução.
+* Exercício do treino sem id de vídeo passa a procurar vídeo pelo nome na biblioteca.
+
+--- v1.11.2 ---
+* Vídeos com tamanho padrão (quadrado, recorte automático).
+* Novo vídeo: Elevação frontal na polia (elev-frontal-polia).
+
+v1.12.0: serie crescente (3-4-5-6-7 reps, 15 s de pausa, total 25) na ultima serie de exercicios de biceps, triceps, ombros e antebraco. Conta 25 reps no volume.
+
+v1.12.2: treino em andamento sobrevive a sair da tela (cronometro continua; trocar de exercicio mantem o progresso e os pulados continuam na fila).
+
+v1.12.3: treino em andamento salvo no celular e retomado ao abrir o app (mesmo se o Android fechar); cronometro por relogio real; tela ligada por padrao; pede permissao de bateria uma vez.
+
+v1.13.0: "Descanso" pulsando em branco metalico; cardio com velocidade/inclinacao da esteira ao vivo (km, kcal e ritmo calculados); tela "Ja fiz cardio" repaginada com tempo, distancia, calorias e ritmo.
+
+
+--- v1.14.1 (mesclada) ---
+* Base completa da v1.13.0 com as alterações de código da v1.14.0 incorporadas:
+  histórico com o dia real do treino, nível automático (Iniciante/Intermediário/
+  Avançado) e duração do plano editável.
+* Histórico reorganizado em seções independentes: Treinos e Cardio. Os resumos
+  de tempo/volume dos treinos não misturam mais os registros de cardio; o cardio
+  tem seus próprios totais de sessões, tempo e distância.
+* Busca de alimentos com filtros Todos, Proteínas, Carboidratos, Gorduras e Frutas.
+* Biblioteca nutricional ampliada de 93 para 130 alimentos, incluindo carnes,
+  peixes, ovos, laticínios, frutas, legumes, cereais e fontes de gordura.
+* Os macros dos alimentos são exibidos por 100 g, mantendo o fluxo de quantidade
+  e edição já existente.
+
+
+VERSAO 1.14.2 - IDENTIDADE VISUAL
+- Aplicado o anel azul luminoso animado da Biblioteca nas categorias selecionadas da Alimentacao.
+- Aplicado o mesmo contorno animado nos titulos das secoes Treinos e Cardio do Historico.
+- Mantido o comportamento de selecao e filtros existentes.
+
+
+VERSAO 1.14.7
+- Tela Plano de treino permite exportar o plano semanal atual em PDF compartilhavel.
+- Exportacao usa os dias e exercicios cadastrados no momento da exportacao.
+- Biblioteca: videos dos exercicios exibidos no detalhe; adicionados 13 videos das versoes 1.14.5 e 1.14.6.
+
+
+--- v1.14.8 ---
+* Corrigido o import da biblioteca Syncfusion PDF: as classes de fonte usadas na exportação agora ficam disponíveis.
+* Mantida a exportação dinâmica do plano semanal atual em PDF, lendo os dias e exercícios cadastrados no momento da exportação.
+* Mantidos os 13 vídeos adicionados nas versões 1.14.5 e 1.14.6 e os demais arquivos da base 1.14.7.
