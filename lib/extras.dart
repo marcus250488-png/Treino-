@@ -484,8 +484,9 @@ class MaisTela extends StatelessWidget {
             _item(Icons.add_circle_outline, 'Treino livre',
                 'Monte e faça um treino fora do plano',
                 () => _abrir(context, const TreinoLivreTela())),
-            // Edição de plano (trocar/reordenar) fica na tela do treino do dia
-            // em "Organizar treino" — sem atalho duplicado aqui.
+            _item(Icons.edit_note_rounded, 'Editar plano de treino',
+                'Troque, reordene ou exclua exercícios',
+                () => _abrir(context, const EditarPlanoTela())),
             _item(Icons.history_rounded, 'Histórico de treinos',
                 '${app.sessoes.length} registro(s) salvo(s)',
                 () => _abrir(context, const HistoricoTela())),

@@ -2145,8 +2145,55 @@ class AppState extends ChangeNotifier {
     return Sugestao(u.first + passo, true);
   }
 
-  /// Exercício já registrado hoje neste dia do plano.
+  // ---------- Exercícios do treino em andamento (sessão ainda não salva) ----------
+  final Set<String> _runFeitos = {};
+  final Set<String> _runExcl = {};
+  String _kRun(String nome, String diaNome) =>
+      '${chaveData(DateTime.now())}|$diaNome|$nome';
+  String _pRun(String diaNome) => '${chaveData(DateTime.now())}|$diaNome|';
+
+  /// Marca o exercício como finalizado no treino em andamento (fica travado).
+  void marcarRunFeito(String nome, String diaNome) {
+    if (_runFeitos.add(_kRun(nome, diaNome))) notifyListeners();
+  }
+
+  /// Marca o exercício como excluído só de hoje.
+  void marcarRunExcluido(String nome, String diaNome) {
+    if (_runExcl.add(_kRun(nome, diaNome))) notifyListeners();
+  }
+
+  /// Reconstrói a lista ao retomar um treino salvo (sem avisar a tela).
+  void definirRun(String diaNome, Iterable<String> feitos, Iterable<String> excl) {
+    final p = _pRun(diaNome);
+    _runFeitos.removeWhere((k) => k.startsWith(p));
+    _runExcl.removeWhere((k) => k.startsWith(p));
+    for (final n in feitos) {
+      _runFeitos.add('$p$n');
+    }
+    for (final n in excl) {
+      _runExcl.add('$p$n');
+    }
+  }
+
+  /// Treino de hoje terminou ou foi abandonado: libera a lista temporária.
+  void limparRun(String diaNome) {
+    final p = _pRun(diaNome);
+    final a = _runFeitos.length + _runExcl.length;
+    _runFeitos.removeWhere((k) => k.startsWith(p));
+    _runExcl.removeWhere((k) => k.startsWith(p));
+    if (_runFeitos.length + _runExcl.length != a) notifyListeners();
+  }
+
+  bool excluidoHojeEx(String nome, String diaNome) =>
+      _runExcl.contains(_kRun(nome, diaNome));
+
+  /// Já feito ou excluído hoje: não entra mais na fila do treino.
+  bool resolvidoHojeEx(String nome, String diaNome) =>
+      feitoHojeEx(nome, diaNome) || excluidoHojeEx(nome, diaNome);
+
+  /// Exercício já registrado hoje neste dia do plano (inclui o treino em andamento).
   bool feitoHojeEx(String nome, String diaNome) {
+    if (_runFeitos.contains(_kRun(nome, diaNome))) return true;
     final k = chaveData(DateTime.now());
     for (final s in sessoes) {
       final dt = DateTime.tryParse(s.data);

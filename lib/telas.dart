@@ -23,7 +23,6 @@ import 'desempenho.dart' show DesempenhoTela;
 import 'sessao_detalhe.dart';
 import 'compartilhar.dart';
 import 'anatomia.dart';
-import 'coach_ia.dart';
 
 const kAzul = Color(0xFF0050E6);
 const kSuperf = Color(0xFF1C1C1E);
@@ -1027,25 +1026,21 @@ class _InicioEstado extends State<InicioTela> {
               style: const TextStyle(color: kAzul, fontSize: 13),
             ),
           ),
-        const SizedBox(height: 10),
-        Text(
-          eHoje ? 'Toque para abrir o treino' : 'Toque para ver o treino',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: branco(.55), fontSize: 13),
+        const SizedBox(height: 14),
+        FilledButton(
+          style: estiloPrimario,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => TreinoTela(dia: dia, data: data)),
+          ),
+          child: Text(eHoje ? 'Iniciar treino' : 'Ver treino'),
         ),
         const SizedBox(height: 10),
         _linhaCardio(context, data),
       ],
     );
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => TreinoTela(dia: dia, data: data)),
-        ),
-        borderRadius: BorderRadius.circular(28),
-        child: Container(
+    return Container(
       clipBehavior: Clip.antiAlias,
       decoration: _decCard,
       child: Stack(
@@ -1098,8 +1093,6 @@ class _InicioEstado extends State<InicioTela> {
             ),
           ),
         ],
-      ),
-        ),
       ),
     );
   }
@@ -1165,7 +1158,7 @@ class TreinoTela extends StatelessWidget {
     // Quantos exercícios ainda faltam hoje (treino parcial salvo).
     final faltam = dia.itens
         .where((i) =>
-            !app.feitoHojeEx(app.ex(i.exId)?.nome ?? i.nome, dia.nome))
+            !app.resolvidoHojeEx(app.ex(i.exId)?.nome ?? i.nome, dia.nome))
         .length;
     final retomando = !feitoHoje && faltam > 0 && faltam < dia.itens.length;
 
@@ -1179,9 +1172,24 @@ class TreinoTela extends StatelessWidget {
           _cabecalho(resumo),
           const SizedBox(height: 12),
           _blocoAquecimento(),
-          _editorRapidoDoDia(context),
-          for (var i = 0; i < dia.itens.length; i++)
-            _cartaoExercicio(context, i),
+          if (dia.itens.any((i) => !app.resolvidoHojeEx(
+              app.ex(i.exId)?.nome ?? i.nome, dia.nome)))
+            const Padding(
+              padding: EdgeInsets.only(left: 4, bottom: 10),
+              child: Text(
+                'Segure e arraste para reordenar. Use ⋮ para trocar ou excluir.',
+                style: TextStyle(color: kMudo, fontSize: 12),
+              ),
+            ),
+          _listaExercicios(context),
+          const SizedBox(height: 2),
+          OutlinedButton.icon(
+            style: estiloContornoFino,
+            onPressed: () => adicionarExercicioA(
+                context, dia.itens, () => app.atualizarPlano()),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Adicionar exercício'),
+          ),
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -1362,70 +1370,6 @@ class TreinoTela extends StatelessWidget {
     );
   }
 
-  /// Edição do dia dentro da própria tela, sem navegar para outra página.
-  Widget _editorRapidoDoDia(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-          collapsedShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: branco(.12))),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: branco(.18))),
-          backgroundColor: branco(.045),
-          collapsedBackgroundColor: branco(.035),
-          leading: const Icon(Icons.tune_rounded, color: kAzul),
-          title: const Text('Organizar treino',
-              style: TextStyle(fontWeight: FontWeight.w700)),
-          subtitle: const Text('Foco, exercícios e ordem',
-              style: TextStyle(color: kMudo, fontSize: 12)),
-          children: [
-            TextFormField(
-              key: ValueKey('foco-${dia.nome}-${dia.foco}'),
-              initialValue: dia.foco,
-              decoration: InputDecoration(
-                labelText: 'Foco do dia',
-                filled: true,
-                fillColor: branco(.07),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              onChanged: (v) {
-                dia.foco = v;
-                app.atualizarPlano();
-              },
-            ),
-            const SizedBox(height: 12),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Segure e arraste para reordenar. Toque no nome para trocar.',
-                  style: TextStyle(color: kMudo, fontSize: 12)),
-            ),
-            const SizedBox(height: 8),
-            ListaItensEditavel(
-              itens: dia.itens,
-              onChanged: () => app.atualizarPlano(),
-            ),
-            OutlinedButton.icon(
-              style: estiloContorno,
-              onPressed: () => adicionarExercicioA(
-                  context, dia.itens, () => app.atualizarPlano()),
-              icon: const Icon(Icons.add),
-              label: const Text('Adicionar exercício'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   /// Bloco de aquecimento opcional: liga ou desliga no topo da lista.
   Widget _blocoAquecimento() {
     return Padding(
@@ -1472,35 +1416,76 @@ class TreinoTela extends StatelessWidget {
     return 'Última vez: ${u.map(fmtNum).join(' / ')} kg';
   }
 
+  /// Lista com arrastar para reordenar (segurar o cartão). Exercício já feito
+  /// ou excluído hoje fica travado: não arrasta e não tem menu.
+  Widget _listaExercicios(BuildContext context) {
+    return ReorderableListView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
+      proxyDecorator: (child, index, animation) =>
+          Material(color: Colors.transparent, child: child),
+      onReorder: (a, b) {
+        if (b > a) b--;
+        final item = dia.itens.removeAt(a);
+        dia.itens.insert(b, item);
+        app.atualizarPlano();
+      },
+      children: [
+        for (var i = 0; i < dia.itens.length; i++)
+          KeyedSubtree(
+            key: ObjectKey(dia.itens[i]),
+            child: _cartaoExercicio(context, i),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _acaoExercicio(BuildContext context, int i, String v) async {
+    if (i < 0 || i >= dia.itens.length) return;
+    final it = dia.itens[i];
+    if (v == 'trocar') {
+      if (await trocarExercicio(context, it)) app.atualizarPlano();
+    } else if (v == 'series') {
+      if (await editarSeriesReps(context, it)) app.atualizarPlano();
+    } else if (v == 'excluir') {
+      final nome = app.ex(it.exId)?.nome ?? it.nome;
+      final messenger = ScaffoldMessenger.of(context);
+      dia.itens.removeAt(i);
+      app.atualizarPlano();
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(
+        content: Text('$nome removido do plano'),
+        action: SnackBarAction(
+          label: 'Desfazer',
+          onPressed: () {
+            dia.itens.insert(i.clamp(0, dia.itens.length).toInt(), it);
+            app.atualizarPlano();
+          },
+        ),
+      ));
+    }
+  }
+
   Widget _cartaoExercicio(BuildContext context, int i) {
     final it = dia.itens[i];
     final ex = app.ex(it.exId);
     final nome = ex?.nome ?? it.nome;
     final equip = ex?.equip ?? '';
     final feito = app.feitoHojeEx(nome, dia.nome);
+    final pulado = !feito && app.excluidoHojeEx(nome, dia.nome);
+    final travado = feito || pulado;
     final estilo = estiloGrupo(it.grupo);
     final ultimas = app.ultimasCargas(nome);
-    final sugerida = app.sugestaoCarga(nome, it.series);
-    return Padding(
+    final sugerida = travado ? null : app.sugestaoCarga(nome, it.series);
+    final cartao = Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Opacity(
-        opacity: feito ? .45 : 1,
+        opacity: travado ? .45 : 1,
         child: Vidro(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.fromLTRB(14, 14, travado ? 14 : 2, 14),
           raio: 22,
-          // Exercício já finalizado fica travado: não reabre nem permite refazer.
-          onTap: feito
-              ? () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'Este exercício já foi finalizado hoje e está travado.'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              : () => detalheExercicio(context, it, dia: dia, indice: i),
+          onTap: () => detalheExercicio(context, it),
           child: Row(
             children: [
               Container(
@@ -1512,28 +1497,26 @@ class TreinoTela extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: estilo.cor, width: 1.5),
                 ),
-                child: Icon(feito ? Icons.lock_outline : estilo.icone,
-                    color: feito ? Colors.white : estilo.cor),
+                child: Icon(
+                    feito
+                        ? Icons.check
+                        : pulado
+                            ? Icons.block
+                            : estilo.icone,
+                    color: travado ? Colors.white : estilo.cor),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(child: Text(nome, style: titulo(22))),
-                        if (feito)
-                          const Text('Concluído',
-                              style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600)),
-                      ],
-                    ),
+                    Text(nome, style: titulo(22)),
                     Text(equip.isEmpty ? it.grupo : '${it.grupo} • $equip',
                         style: TextStyle(color: estilo.cor, fontSize: 13)),
-                    if (ultimas != null && ultimas.isNotEmpty)
+                    if (pulado)
+                      const Text('Excluído do treino de hoje',
+                          style: TextStyle(color: kMudo, fontSize: 12))
+                    else if (ultimas != null && ultimas.isNotEmpty)
                       Text(_textoUltima(ultimas),
                           style: const TextStyle(color: kMudo, fontSize: 12)),
                     if (sugerida != null)
@@ -1548,11 +1531,26 @@ class TreinoTela extends StatelessWidget {
               const SizedBox(width: 8),
               Text('${it.series} × ${it.reps}',
                   style: const TextStyle(fontWeight: FontWeight.w600)),
+              if (!travado)
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  tooltip: 'Opções',
+                  icon: const Icon(Icons.more_vert, color: kMudo),
+                  onSelected: (v) => _acaoExercicio(context, i, v),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'trocar', child: Text('Trocar exercício')),
+                    PopupMenuItem(
+                        value: 'series', child: Text('Séries e repetições')),
+                    PopupMenuItem(value: 'excluir', child: Text('Excluir do plano')),
+                  ],
+                ),
             ],
           ),
         ),
       ),
     );
+    if (travado) return cartao;
+    return ReorderableDelayedDragStartListener(index: i, child: cartao);
   }
 }
 
@@ -1573,81 +1571,18 @@ void abrirImportar(BuildContext context, void Function(int) irPara) {
   );
 }
 
-/// Tira um exercício só da sessão de hoje e salva o treino de hoje como completo,
-/// com os exercícios feitos. A rotina do dia não muda.
-Future<bool> finalizarTreinoSemExercicio(Dia dia, String nome) async {
-  final k = chaveData(DateTime.now());
-  final doDia = app.sessoes
-      .where((s) =>
-          !s.cardio &&
-          s.dia == dia.nome &&
-          chaveData(DateTime.tryParse(s.data) ?? DateTime(1970)) == k)
-      .toList();
-
-  // Reúne somente os exercícios que realmente foram registrados nas sessões.
-  // Não cria uma sessão vazia quando o exercício removido era o único item.
-  var seg = 0;
-  var series = 0;
-  var volume = 0.0;
-  final det = <Map<String, dynamic>>[];
-  for (final s in doDia) {
-    seg += s.seg;
-    for (final m in s.detalhes ?? const <Map<String, dynamic>>[]) {
-      if ((m['nome'] ?? '').toString() == nome) continue;
-      final item = Map<String, dynamic>.from(m);
-      det.add(item);
-      final cargas = ((item['cargas'] as List?) ?? const [])
-          .whereType<num>()
-          .map((e) => e.toDouble())
-          .toList();
-      series += cargas.length;
-      volume += cargas.fold<double>(0, (a, c) => a + c) *
-          repsMedio((item['reps'] ?? '') as String);
-    }
-  }
-
-  // Sem exercícios concluídos, não há treino para salvar nem dia para concluir.
-  if (det.isEmpty || series == 0) return false;
-
-  var total = 0;
-  for (final i in dia.itens) {
-    if ((app.ex(i.exId)?.nome ?? i.nome) != nome) total += i.series;
-  }
-
-  final sessao = Sessao(
-    data: DateTime.now().toIso8601String(),
-    dia: dia.nome,
-    seg: seg,
-    series: series,
-    seriesTotal: total,
-    volume: volume,
-    completo: true,
-    livre: false,
-    detalhes: det,
-  );
-  for (final s in doDia) {
-    await app.excluirSessao(s);
-  }
-  await app.addSessao(sessao);
-  await app.concluirDia(DateTime.now());
-  return true;
-}
-
-void detalheExercicio(BuildContext context, Item it,
-    {Dia? dia, int indice = 0}) {
+void detalheExercicio(BuildContext context, Item it) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: kSuperf,
-    builder: (c) => _DetalheEx(it: it, dia: dia, indice: indice),
+    builder: (c) => _DetalheEx(it: it),
   );
 }
 
 class _DetalheEx extends StatefulWidget {
   final Item it;
-  final Dia? dia;
-  final int indice;
-  const _DetalheEx({required this.it, this.dia, this.indice = 0});
+  const _DetalheEx({required this.it});
   @override
   State<_DetalheEx> createState() => _DetalheExEstado();
 }
@@ -1740,53 +1675,6 @@ class _DetalheExEstado extends State<_DetalheEx> {
                 label: const Text('Ver anatomia'),
               ),
             ],
-            if (widget.dia != null) ...[
-              const SizedBox(height: 20),
-              if (app.eTreinoDeHoje(widget.dia!)) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.redAccent,
-                    side: const BorderSide(color: Colors.redAccent),
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(26)),
-                  ),
-                  onPressed: () async {
-                    final nav = Navigator.of(context);
-                    final messenger = ScaffoldMessenger.of(context);
-                    final ok = await showDialog<bool>(
-                      context: context,
-                      builder: (c) => AlertDialog(
-                        title: const Text('Excluir e finalizar treino?'),
-                        content: const Text(
-                            'Remover este exercício só de hoje e finalizar o treino?\n\nA rotina dos outros dias continua igual.'),
-                        actions: [
-                          TextButton(
-                              onPressed: () => Navigator.pop(c, false),
-                              child: const Text('Cancelar')),
-                          TextButton(
-                              onPressed: () => Navigator.pop(c, true),
-                              child: const Text('Confirmar')),
-                        ],
-                      ),
-                    );
-                    if (ok != true) return;
-                    final nome = app.ex(widget.it.exId)?.nome ?? widget.it.nome;
-                    final finalizado =
-                        await finalizarTreinoSemExercicio(widget.dia!, nome);
-                    if (!mounted) return;
-                    nav.pop();
-                    messenger.showSnackBar(SnackBar(
-                        content: Text(finalizado
-                            ? 'Treino de hoje finalizado'
-                            : 'Nenhuma série dos outros exercícios foi registrada. O treino não foi salvo como concluído.')));
-                  },
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('Excluir e finalizar treino'),
-                ),
-              ],
-            ],
           ],
         ),
       ),
@@ -1858,6 +1746,8 @@ class _RunSalvo {
   final Set<String> recordes;
   final Map<int, _ProgEx> prog;
   final DateTime saiuEm;
+  final List<String> ids; // exId de cada posição do plano quando foi salvo
+  final Set<String> excl; // exercícios excluídos só deste treino (exId)
   _RunSalvo({
     required this.dia,
     required this.data,
@@ -1881,6 +1771,8 @@ class _RunSalvo {
     required this.recordes,
     required this.prog,
     required this.saiuEm,
+    this.ids = const [],
+    this.excl = const {},
   });
 
   Map<String, dynamic> toJson() => {
@@ -1906,6 +1798,8 @@ class _RunSalvo {
         'recordes': recordes.toList(),
         'prog': prog.map((k, v) => MapEntry('$k', v.toJson())),
         'saiuEm': saiuEm.toIso8601String(),
+        'ids': ids,
+        'excl': excl.toList(),
       };
 
   factory _RunSalvo.fromJson(Map<String, dynamic> j) => _RunSalvo(
@@ -1944,6 +1838,8 @@ class _RunSalvo {
                 _ProgEx.fromJson(Map<String, dynamic>.from(e.value as Map))
         },
         saiuEm: DateTime.parse(j['saiuEm'] as String),
+        ids: [for (final x in (j['ids'] as List? ?? const [])) x as String],
+        excl: {for (final x in (j['excl'] as List? ?? const [])) x as String},
       );
 }
 
@@ -1959,9 +1855,11 @@ Future<bool> retomarTreinoSalvo(BuildContext context) async {
       if (d.nome == sv.dia) dia = d;
     }
     final velho = DateTime.now().difference(sv.saiuEm).inHours >= 8;
+    // Treino salvo por versão antiga (sem ids) depende dos índices do plano.
     final foraDeIndice = dia == null ||
-        sv.fila.any((k) => k < 0 || k >= dia!.itens.length) ||
-        sv.prog.keys.any((k) => k < 0 || k >= dia!.itens.length);
+        (sv.ids.isEmpty &&
+            (sv.fila.any((k) => k < 0 || k >= dia!.itens.length) ||
+                sv.prog.keys.any((k) => k < 0 || k >= dia!.itens.length)));
     if (sv.livre || velho || foraDeIndice || sv.data != chaveData(DateTime.now())) {
       await app.gravarRunSalvo(null);
       return false;
@@ -2025,7 +1923,17 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
   final List<_ResumoEx> resumo = [];
   final List<double> _cargasEx = [];
   final Set<String> _recordes = {}; // exercícios que bateram o recorde nesta sessão
+  final Set<String> _exclIds = {}; // exercícios excluídos só deste treino (exId)
   Item get it => widget.dia.itens[ei];
+
+  /// Já feito ou excluído hoje: não volta para a fila.
+  bool _resolvido(int k) {
+    if (widget.livre) return false;
+    final item = widget.dia.itens[k];
+    final nome = app.ex(item.exId)?.nome ?? item.nome;
+    return _exclIds.contains(item.exId) ||
+        app.resolvidoHojeEx(nome, widget.dia.nome);
+  }
 
   @override
   void initState() {
@@ -2038,24 +1946,29 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     if (continua) {
       _restaurar(salvo!);
     } else {
-    // Fila: só os exercícios que ainda faltam hoje (se já houve treino parcial).
-    final n = widget.dia.itens.length;
-    final todos = [for (var k = 0; k < n; k++) k];
-    final pend = [
-      for (final k in todos)
-        if (!app.feitoHojeEx(
-            app.ex(widget.dia.itens[k].exId)?.nome ?? widget.dia.itens[k].nome,
-            widget.dia.nome))
-          k
-    ];
-    // Em treino normal, nunca recoloca exercícios já concluídos na fila.
-    // Se todos foram feitos, a tela informa que o treino do dia já terminou.
-    final base = widget.livre ? todos : pend;
-    final ordem = List<int>.of(base);
-    _semPendentes = !widget.livre && ordem.isEmpty;
-    _fila = _semPendentes ? [0] : ordem;
+      // Fila: só os exercícios que ainda faltam hoje (feitos e excluídos ficam de fora).
+      final n = widget.dia.itens.length;
+      final todos = [for (var k = 0; k < n; k++) k];
+      final pend = [
+        for (final k in todos)
+          if (!_resolvido(k)) k
+      ];
+      final base = widget.livre ? todos : pend;
+      _semPendentes = !widget.livre && base.isEmpty;
+      _fila = _semPendentes ? [0] : List<int>.of(base);
     }
-    _carregar();
+    if (_fila.isEmpty) {
+      // O plano mudou e não sobrou nada para fazer.
+      if (feitasSeries > 0 || resumo.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _fim();
+        });
+      } else {
+        _semPendentes = true;
+        _fila = [0];
+      }
+    }
+    if (!_semPendentes && _fila.isNotEmpty) _carregar();
     WidgetsBinding.instance.addObserver(this);
     _ultimoTick = DateTime.now();
     _t = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -2082,26 +1995,131 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
   }
 
   void _restaurar(_RunSalvo s) {
-    _fila = List<int>.of(s.fila);
+    final atuais = [for (final i in widget.dia.itens) i.exId];
+    final igual = s.ids.isEmpty ||
+        (s.ids.length == atuais.length &&
+            Iterable<int>.generate(atuais.length)
+                .every((k) => s.ids[k] == atuais[k]));
+    // Posição antiga -> posição nova (o plano pode ter sido reordenado,
+    // trocado ou ter exercícios excluídos/adicionados com o treino em andamento).
+    final mapa = <int, int>{};
+    if (igual) {
+      for (var k = 0; k < atuais.length; k++) {
+        mapa[k] = k;
+      }
+    } else {
+      final usados = <int>{};
+      for (var o = 0; o < s.ids.length; o++) {
+        for (var n = 0; n < atuais.length; n++) {
+          if (!usados.contains(n) && atuais[n] == s.ids[o]) {
+            mapa[o] = n;
+            usados.add(n);
+            break;
+          }
+        }
+      }
+    }
+    final cabecaAntiga = s.fila.isNotEmpty ? s.fila.first : null;
+    final cabecaNova = cabecaAntiga == null ? null : mapa[cabecaAntiga];
+    _fila = [
+      for (final k in s.fila)
+        if (mapa[k] != null) mapa[k]!
+    ];
+    for (final e in s.prog.entries) {
+      final n = mapa[e.key];
+      if (n != null) _prog[n] = e.value;
+    }
+    for (final e in s.extra.entries) {
+      final n = mapa[e.key];
+      if (n != null) _extra[n] = e.value;
+    }
+    for (final e in s.crescTodas.entries) {
+      final n = mapa[e.key];
+      if (n != null) _crescTodas[n] = e.value;
+    }
+    _exclIds.addAll(s.excl);
     si = s.si;
     feitasSeries = s.feitasSeries;
     volume = s.volume;
     pausado = s.pausado;
     _rpeNome.addAll(s.rpe);
-    _extra.addAll(s.extra);
-    _crescTodas.addAll(s.crescTodas);
     _cresc = s.cresc;
     _crescEtapa = s.crescEtapa;
     resumo.addAll(s.resumo);
     _cargasEx.addAll(s.cargasEx);
     _repsEx.addAll(s.repsEx);
     _recordes.addAll(s.recordes);
-    _prog.addAll(s.prog);
     // O cronômetro segue contando enquanto a tela esteve fechada.
     final dec = DateTime.now().difference(s.saiuEm).inSeconds;
     seg = s.seg + (s.pausado ? 0 : dec);
     descanso = s.pausado ? s.descanso : (s.descanso > dec ? s.descanso - dec : 0);
     _crescPausa = s.pausado ? s.crescPausa : (s.crescPausa > dec ? s.crescPausa - dec : 0);
+
+    // O exercício em andamento saiu do plano (trocado ou excluído): descarta as
+    // séries dele para o resumo não ficar com séries que não existem.
+    if (cabecaAntiga != null && cabecaNova == null) {
+      _descartarEmCurso();
+      descanso = 0;
+    }
+    if (!igual && !widget.livre) _alinharComPlano(cabecaNova);
+
+    // Mantém a lista de exercícios travados (feitos/excluídos) em dia com o app.
+    if (!widget.livre) {
+      app.definirRun(
+        widget.dia.nome,
+        [for (final r in resumo) r.nome],
+        [
+          for (final i in widget.dia.itens)
+            if (_exclIds.contains(i.exId)) app.ex(i.exId)?.nome ?? i.nome
+        ],
+      );
+    }
+  }
+
+  /// Joga fora as séries já feitas do exercício atual (ele saiu do treino).
+  void _descartarEmCurso() {
+    for (var i = 0; i < _cargasEx.length; i++) {
+      volume -= _cargasEx[i] * (i < _repsEx.length ? _repsEx[i] : 0);
+    }
+    feitasSeries -= _cargasEx.length;
+    if (feitasSeries < 0) feitasSeries = 0;
+    if (volume < 0) volume = 0;
+    _cargasEx.clear();
+    _repsEx.clear();
+    si = 0;
+    _cresc = false;
+    _crescEtapa = 0;
+    _crescPausa = 0;
+  }
+
+  /// O plano foi reordenado/editado com o treino em andamento: os exercícios que
+  /// faltam seguem a ordem nova. Feitos e excluídos nunca voltam.
+  void _alinharComPlano(int? cabeca) {
+    final emCurso = cabeca != null && (si > 0 || _cargasEx.isNotEmpty);
+    final desejada = [
+      for (var k = 0; k < widget.dia.itens.length; k++)
+        if (!_resolvido(k)) k
+    ];
+    var mantem = false;
+    if (emCurso) {
+      mantem = desejada.remove(cabeca);
+      if (mantem) {
+        desejada.insert(0, cabeca!);
+      } else {
+        _descartarEmCurso();
+      }
+    }
+    final mudouCabeca = desejada.isEmpty || desejada.first != cabeca;
+    _fila = desejada;
+    if (_fila.isEmpty) return;
+    if (mudouCabeca) {
+      si = 0;
+      descanso = 0;
+      _cresc = false;
+      _crescEtapa = 0;
+      _crescPausa = 0;
+      _restaurarProgresso();
+    }
   }
 
   void _salvarProgresso() {
@@ -2122,7 +2140,6 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
       ..clear()
       ..addAll(p?.reps ?? const <int>[]);
   }
-
 
   _RunSalvo _instantaneo() => _RunSalvo(
         dia: widget.dia.nome,
@@ -2147,6 +2164,8 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
         recordes: Set<String>.of(_recordes),
         prog: Map<int, _ProgEx>.of(_prog),
         saiuEm: DateTime.now(),
+        ids: [for (final i in widget.dia.itens) i.exId],
+        excl: Set<String>.of(_exclIds),
       );
 
   /// Guarda o treino em andamento no celular (sobrevive ao app ser fechado).
@@ -2165,7 +2184,7 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    if (!_terminou) {
+    if (!_terminou && !_semPendentes) {
       _RunSalvo.atual = _instantaneo();
       _persistir();
     }
@@ -2203,6 +2222,10 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
           cresc: usouCresc));
       _cargasEx.clear();
       _repsEx.clear();
+      // Exercício finalizado: trava na tela do treino (não dá para refazer hoje).
+      if (!widget.livre) {
+        app.marcarRunFeito(app.ex(it.exId)?.nome ?? it.nome, widget.dia.nome);
+      }
       await _perguntarRpe();
       if (!mounted) return;
     }
@@ -2228,53 +2251,15 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
   /// Pula para o próximo; este volta ao fim da fila (só se ainda não há série feita).
   void _pular() {
     setState(() {
-      // Guarda séries já feitas antes de enviar este exercício para o fim da fila.
-      _salvarProgresso();
       _fila.add(_fila.removeAt(0));
       si = 0;
       descanso = 0;
       _restaurarProgresso();
       _carregar();
     });
-    _persistir();
   }
 
-  /// Remove somente o exercício atual da execução de hoje, preservando
-  /// séries já registradas e mantendo o restante da fila.
-  Future<void> _excluirAtualEContinuar() async {
-    final nome = app.ex(it.exId)?.nome ?? it.nome;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Não vai fazer este exercício?'),
-        content: Text('Excluir "$nome" somente do treino de hoje? As cargas e séries dos outros exercícios serão preservadas.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Voltar')),
-          TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Excluir exercício')),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
-    setState(() {
-      _salvarProgresso();
-      if (_fila.isNotEmpty) _fila.removeAt(0);
-      descanso = 0;
-      _cresc = false;
-      _crescEtapa = 0;
-      _crescPausa = 0;
-      if (_fila.isNotEmpty) {
-        _restaurarProgresso();
-        _carregar();
-      }
-    });
-    if (_fila.isEmpty) {
-      await _fim(parcial: feitasSeries == 0);
-    } else {
-      _persistir();
-    }
-  }
-
-  /// RPE: como foi o exercício que acabou de terminar. Ajusta a sugestão de carga da próxima vez.
+  /// RPE: como foi o exercício que acabou de terminar. Ajusta a sugestão da próxima vez.
   Future<void> _perguntarRpe() async {
     final nome = app.ex(it.exId)?.nome ?? it.nome;
     final escolha = await showDialog<String>(
@@ -2303,7 +2288,9 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     _RunSalvo.atual = null;
     await app.gravarRunSalvo(null);
     _t.cancel();
-    final total = widget.dia.itens.fold<int>(0, (s, e) => s + e.series) +
+    final total = widget.dia.itens
+            .where((e) => !_exclIds.contains(e.exId))
+            .fold<int>(0, (s, e) => s + e.series) +
         _extra.values.fold<int>(0, (s, e) => s + e);
     // Exercício que ficou pela metade entra no resumo como parcial.
     if (_cargasEx.isNotEmpty) {
@@ -2321,6 +2308,7 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     }
     _prog.clear();
     if (parcial && feitasSeries == 0) {
+      if (!widget.livre) app.limparRun(widget.dia.nome);
       if (!mounted) return;
       Navigator.of(context).popUntil((r) => r.isFirst);
       return;
@@ -2348,6 +2336,7 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     );
     await app.addSessao(sessao);
     if (!parcial && !widget.livre) await app.concluirDia(DateTime.now());
+    if (!widget.livre) app.limparRun(widget.dia.nome);
     if (!mounted) return;
     final nav = Navigator.of(context);
     final acao = await showDialog<String>(
@@ -2395,29 +2384,90 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _encerrar() async {
+  /// Termina o treino agora: salva o que foi feito e marca o dia como concluído.
+  Future<void> _finalizar() async {
+    final emCurso = si > 0 || _cargasEx.isNotEmpty;
+    final faltam = _fila.length - (emCurso ? 1 : 0);
+    final nada = feitasSeries == 0;
+    final texto = nada
+        ? 'Nenhuma série foi concluída, então nada será salvo.'
+        : faltam > 0
+            ? 'Ainda ${faltam == 1 ? 'falta 1 exercício' : 'faltam $faltam exercícios'}. O treino de hoje será salvo como concluído, com o que você fez.'
+            : 'O treino de hoje será salvo como concluído.';
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Encerrar treino?'),
-        content: Text(feitasSeries == 0
-            ? 'Nenhuma série foi concluída, então nada será salvo.'
-            : 'Vamos salvar como treino parcial ($feitasSeries séries).'),
+        title: const Text('Finalizar treino?'),
+        content: Text(texto),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
-              child: const Text('Continuar')),
+              child: const Text('Continuar treinando')),
           TextButton(
               onPressed: () => Navigator.pop(c, true),
-              child: const Text('Encerrar')),
+              child: const Text('Finalizar')),
         ],
       ),
     );
-    if (ok == true) await _fim(parcial: true);
+    if (ok == true) await _fim(parcial: nada);
+  }
+
+  /// Tira o exercício atual só do treino de hoje (o plano não muda).
+  Future<void> _excluirExercicio() async {
+    final nome = app.ex(it.exId)?.nome ?? it.nome;
+    final fez = _cargasEx.length;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Excluir $nome de hoje?'),
+        content: Text(fez > 0
+            ? 'As $fez série(s) já feitas deste exercício não serão salvas. A rotina do plano continua igual.'
+            : 'Ele sai só do treino de hoje. A rotina do plano continua igual.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Excluir')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final idx = ei;
+    final exId = it.exId;
+    _descartarEmCurso();
+    _exclIds.add(exId);
+    _extra.remove(idx);
+    _crescTodas.remove(idx);
+    if (!widget.livre) app.marcarRunExcluido(nome, widget.dia.nome);
+    if (_fila.length > 1) {
+      setState(() {
+        _fila.removeAt(0);
+        si = 0;
+        descanso = 0;
+        _restaurarProgresso();
+        _carregar();
+      });
+      _persistir();
+      return;
+    }
+    // Era o último exercício que faltava.
+    _fila.removeAt(0);
+    if (feitasSeries > 0 || resumo.isNotEmpty) {
+      await _fim();
+    } else {
+      _terminou = true;
+      _RunSalvo.atual = null;
+      await app.gravarRunSalvo(null);
+      if (!widget.livre) app.limparRun(widget.dia.nome);
+      if (mounted) Navigator.of(context).pop();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_fila.isEmpty) return const Scaffold(body: SizedBox.expand());
     if (_semPendentes) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.dia.nome, style: titulo(26))),
@@ -2476,11 +2526,7 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  tooltip: 'Encerrar treino',
-                  onPressed: _encerrar,
-                  icon: const Icon(Icons.stop_circle_outlined, size: 30),
-                ),
+                const SizedBox(width: 48),
               ],
             ),
             const SizedBox(height: 16),
@@ -2586,17 +2632,28 @@ class _RunEstado extends State<RunTela> with WidgetsBindingObserver {
                 label: const Text('Adicionar 1 série'),
               ),
             ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.redAccent,
-                side: const BorderSide(color: Colors.redAccent),
-                minimumSize: const Size.fromHeight(48),
-                shape: const StadiumBorder(),
+            if (!_cresc)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: OutlinedButton.icon(
+                  style: estiloContornoFino.merge(OutlinedButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                    side: BorderSide(
+                        color: Colors.redAccent.withOpacity(.7), width: 1),
+                  )),
+                  onPressed: _excluirExercicio,
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Excluir exercício de hoje'),
+                ),
               ),
-              onPressed: _excluirAtualEContinuar,
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Excluir este exercício e continuar/finalizar'),
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: OutlinedButton.icon(
+                style: estiloContornoFino,
+                onPressed: _finalizar,
+                icon: const Icon(Icons.flag_outlined, size: 18),
+                label: const Text('Finalizar treino'),
+              ),
             ),
             if (resumo.isNotEmpty) ...[
               const SizedBox(height: 20),
